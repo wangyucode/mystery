@@ -1,16 +1,9 @@
-"use client";
 import { useEffect, useState } from "react";
-import { Button, Input, Card, CardBody, CardFooter, Link, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
-import Image from "next/image";
-import io from "socket.io-client";
+import { Image, Button, Input, Card, CardBody, CardFooter, Link, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
 
 
 export default function Home() {
 
-  // async function fetchAPI(url) {
-  //   'use server'
-
-  // }
 
   const stories = [
     { title: "大明星的最后演出", people: 2, image: "/cover/dmxdzhyc.png" },
@@ -64,7 +57,7 @@ export default function Home() {
             onClick={storyClick}
             data-title={story.title}>
             <CardBody className="p-0">
-              <Image width={192} height={192} src={story.image} alt={story.title}></Image>
+              <Image width={192} height={192} src={story.image} alt={story.title} radius="none"></Image>
             </CardBody>
             <CardFooter className="text-sm flex justify-between">
               <b>{story.title}</b>
