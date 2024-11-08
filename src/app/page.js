@@ -1,43 +1,85 @@
 "use client";
-import { useEffect } from "react";
-import { Card, CardBody, CardFooter, Link, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
+import { useEffect, useState } from "react";
+import { Button, Input, Card, CardBody, CardFooter, Link, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
 import Image from "next/image";
+import io from "socket.io-client";
+
 
 export default function Home() {
 
-  useEffect(() => {
-    fetch('/api/socket'); // 初始化 WebSocket 服务器
-  }, []);
+  // async function fetchAPI(url) {
+  //   'use server'
+
+  // }
+
+  const stories = [
+    { title: "大明星的最后演出", people: 2, image: "/cover/dmxdzhyc.png" },
+    { title: "网红校花的堕落", people: 5, image: "/cover/whxhddl.png" },
+  ];
+
+  const [select, setSelect] = useState({});
+  const [error, setError] = useState("");
+
+  let socket;
+
+  // useEffect(() => {
+  //   fetch('/api/socket'); // 初始化 WebSocket 服务器
+  //   socket = io();
+  //   socket.on('message', msg => {
+  //     console.log(msg);
+  //   });
+  //   return () => {
+  //     socket.disconnect();
+  //   };
+  // }, []);
+
+  function create() {
+    if (!select) {
+      setError("⚠️ 请选择剧本");
+      return;
+    }
+    if (select === "网红校花的堕落") {
+      setError("⚠️ 剧本未上线，敬请期待！");
+      return;
+    }
+
+    // socket.emit("message", "create");
+  }
+
+  function storyClick(e) {
+    console.log("storyClick->", e.currentTarget.dataset.title);
+    setError("");
+    setSelect(e.currentTarget.dataset.title)
+  }
 
   return (
-    <main className="flex-1 grid grid-cols-2 content-start gap-4 justify-start px-4">
-      <Link href="/join">
-        <Card className="h-60" isPressable>
-          <CardBody className="p-0">
-            <Image width={192} height={192} src="/cover/dmxdzhyc.png" alt="大明星的最后演出"></Image>
-          </CardBody>
-          <CardFooter className="text-sm flex justify-between">
-            <b>大明星的最后演出</b>
-            <p>2人</p>
-          </CardFooter>
-        </Card>
-      </Link>
-      <Popover placement="bottom" color="warning">
-        <PopoverTrigger>
-          <Card className="h-60" isPressable>
+    <main className="flex-1 flex flex-col px-4 gap-4">
+      <div className="grid grid-cols-2 content-start gap-4 justify-start">
+        {stories.map(story =>
+        (
+          <Card
+            key={story.title}
+            className={`h-60 ${story.title === select ? 'ring-4' : ''}`}
+            isPressable
+            onClick={storyClick}
+            data-title={story.title}>
             <CardBody className="p-0">
-              <Image width={192} height={192} src="/cover/whxhddl.png" alt="网红校花的堕落"></Image>
+              <Image width={192} height={192} src={story.image} alt={story.title}></Image>
             </CardBody>
             <CardFooter className="text-sm flex justify-between">
-              <b>网红校花的堕落</b>
-              <p>5人</p>
+              <b>{story.title}</b>
+              <p>{story.people}人</p>
             </CardFooter>
           </Card>
-        </PopoverTrigger>
-        <PopoverContent>
-          <p className="text-sm font-bold">正在开发中...</p>
-        </PopoverContent>
-      </Popover>
-    </main>
+        )
+        )}
+      </div>
+      {error && <div className={`text-sm rounded-lg bg-amber-200 text-amber-600 border p-2 border-amber-600`}>{error}</div>}
+      <Button color="primary" className="w-full" onClick={create}>创建</Button>
+      <div className="flex gap-2">
+        <Input placeholder="输入房间号" className="flex-1"></Input>
+        <Button color="secondary">加入</Button>
+      </div>
+    </main >
   );
 }
