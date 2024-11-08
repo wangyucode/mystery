@@ -1,27 +1,25 @@
 // SocketContext.js
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-const SocketContext = React.createContext(null);
+
+export const SocketContext = React.createContext(null);
 
 export const SocketProvider = ({ children }) => {
-  const socket = io();
+  const socketRef = useRef(io());
 
-  socket.on('connect', () => {
-    console.log('Connected to server');
-  });
+  useEffect(() => {
+    socketRef.current.on('connect', () => {
+      console.log('Connected to server');
+    });
+    return () => {
+      socketRef.current.removeAllListeners("details")
+    };
+  }, []);
 
   return (
-    <SocketContext.Provider value={socket}>
+    <SocketContext.Provider value={{ socket: socketRef.current }}>
       {children}
     </SocketContext.Provider>
   );
-};
-
-export const useSocket = () => {
-  const context = React.useContext(SocketContext);
-  if (context === undefined) {
-    throw new Error('useSocket must be used within a SocketProvider');
-  }
-  return context;
 };

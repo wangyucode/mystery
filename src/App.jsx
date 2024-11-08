@@ -1,19 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "@nextui-org/react";
-import { io } from "socket.io-client";
-import { useSocket } from "./SocketContext";
+import { SocketContext } from "./SocketContext";
 
 export default function App({ children }) {
 
   const [count, setCount] = useState({ user: 0, ai: 500, room: 0 });
-  const socket = useSocket();
+  let context = useContext(SocketContext);
 
   useEffect(() => {
-    socket.on("count", (count) => {
+    console.log("socket->", context.socket);
+    context.socket.on("count", (count) => {
+      console.log("count->", count);
       setCount(count);
     });
     return () => {
-      socket.off("count");
+      context.socket.off("count");
     };
   }, []);
 
