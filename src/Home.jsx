@@ -10,23 +10,12 @@ export default function Home() {
     { title: "网红校花的堕落", people: 5, image: "/cover/whxhddl.png" },
   ];
 
-  const [select, setSelect] = useState({});
+  const [select, setSelect] = useState("");
   const [error, setError] = useState("");
 
-  let socket;
-
-  // useEffect(() => {
-  //   fetch('/api/socket'); // 初始化 WebSocket 服务器
-  //   socket = io();
-  //   socket.on('message', msg => {
-  //     console.log(msg);
-  //   });
-  //   return () => {
-  //     socket.disconnect();
-  //   };
-  // }, []);
 
   function create() {
+    console.log("create->", select);
     if (!select) {
       setError("⚠️ 请选择剧本");
       return;
