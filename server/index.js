@@ -2,6 +2,8 @@ import { Server } from "socket.io";
 import Koa from "koa";
 import { createServer } from "http";
 
+import * as room from "./room.js";
+
 let count = {user: 0, ai: 0, room: 0};
 
 
@@ -21,6 +23,12 @@ io.on("connection", (socket) => {
   socket.on("disconnect", (reason) => {
     console.log("user disconnected->", socket.id, reason);
     count.user--;
+    io.emit("count", count);
+  });
+  socket.on("room:create", (name) => {
+    console.log("room created->", name);
+    room.create(name, socket);
+    count.room++;
     io.emit("count", count);
   });
 });

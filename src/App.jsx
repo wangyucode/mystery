@@ -1,6 +1,6 @@
 import { useState, useEffect} from "react";
 import { Link } from "@nextui-org/react";
-import { socket } from "./socket";
+import socket from "./socket";
 
 export default function App({ children }) {
 

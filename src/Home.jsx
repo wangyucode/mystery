@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { Image, Button, Input, Card, CardBody, CardFooter, Link, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
+import { useState, useEffect } from "react";
+import { Image, Button, Input, Card, CardBody, CardFooter} from "@nextui-org/react";
 
+import socket from "./socket";
 
 export default function Home() {
 
@@ -12,6 +13,18 @@ export default function Home() {
 
   const [select, setSelect] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    socket.on("room:created", (data) => {
+      console.log(data);
+      // TODO 跳转到房间
+    });
+
+    return () => {
+      socket.off("room:created");
+     };
+  }, []);
 
 
   function create() {
@@ -24,8 +37,8 @@ export default function Home() {
       setError("⚠️ 剧本未上线，敬请期待！");
       return;
     }
-
-    // socket.emit("message", "create");
+    setLoading(true);
+    socket.emit("room:create", select);
   }
 
   function storyClick(e) {
@@ -57,10 +70,10 @@ export default function Home() {
         )}
       </div>
       {error && <div className={`text-sm rounded-lg bg-amber-200 text-amber-600 border p-2 border-amber-600`}>{error}</div>}
-      <Button color="primary" className="w-full" onClick={create}>创建</Button>
+      <Button color="primary" className="w-full" onClick={create} isLoading={loading}>创建</Button>
       <div className="flex gap-2">
         <Input placeholder="输入房间号" className="flex-1"></Input>
-        <Button color="secondary">加入</Button>
+        <Button color="secondary" isLoading={loading}>加入</Button>
       </div>
     </main >
   );
