@@ -25,6 +25,7 @@ export function create(data, socket, io) {
     socket.join(id);
     socket.emit('room:created', id);
     io.to(id).emit('room:update', room);
+    io.to(id).emit('room:message', `${socket.id.substring(0, 4)} 创建了房间`);
     console.log("create", socket.rooms);
 }
 
@@ -44,6 +45,7 @@ export async function join(id, socket, io) {
     console.log("ids->", ids);
     socket.emit('room:joined', id);
     io.to(id).emit('room:update', room);
+    io.to(id).emit('room:message', `${socket.id.substring(0, 4)} 加入了房间`);
     console.log("join", socket.rooms);
 }
 
@@ -71,7 +73,7 @@ export function leave(id, socket, io) {
 
         // 检查是否找到了玩家，并发送相应的消息
         if (playerFound) {
-            const message = (playerFound.name || playerFound) + '离开了房间.';
+            const message = `${playerFound.substring(0, 4)}离开了房间`;
             io.to(id).emit('room:update', room); // 发送更新后的房间信息
             io.to(id).emit('room:message', message); // 发送玩家离开的消息
         } else {
