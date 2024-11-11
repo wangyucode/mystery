@@ -1,8 +1,9 @@
 import { useState, useEffect} from "react";
 import { Link } from "@nextui-org/react";
+import { Outlet } from "react-router-dom";
 import socket from "./socket";
 
-export default function App({ children }) {
+export default function App() {
 
   const [count, setCount] = useState({ user: 0, ai: 500, room: 0 });
 
@@ -23,7 +24,7 @@ export default function App({ children }) {
         <h1 className="text-2xl m-2">AI剧本杀</h1>
         <p className="text-sm">在线人类：{count.user}，在线AI：{count.ai}，房间数：{count.room}</p>
       </header>
-      {children}
+      <Outlet />
       <footer className='border-t p-2 text-center w-full flex items-center justify-center text-sm gap-2'>
         <span>Made with ❤️ by</span>
         <Link href="https://wycode.cn" size="sm" isExternal>wycode.cn</Link>

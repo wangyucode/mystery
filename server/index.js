@@ -4,7 +4,7 @@ import { createServer } from "http";
 
 import * as room from "./room.js";
 
-let count = {user: 0, ai: 0, room: 0};
+let count = { user: 0, ai: 0, room: 0 };
 
 
 const app = new Koa();
@@ -12,7 +12,7 @@ const httpServer = createServer(app.callback());
 const io = new Server(httpServer, {
   serveClient: false,
   connectionStateRecovery: {
-    maxDisconnectionDuration:  4 * 3600 * 1000
+    maxDisconnectionDuration: 4 * 3600 * 1000
   }
 });
 
@@ -25,11 +25,22 @@ io.on("connection", (socket) => {
     count.user--;
     io.emit("count", count);
   });
-  socket.on("room:create", (name) => {
-    console.log("room created->", name);
-    room.create(name, socket);
+  socket.on("room:create", (data) => {
+    console.log("room created->", data);
+    room.create(data, socket, io);
     count.room++;
     io.emit("count", count);
+  });
+  socket.on("room:join", (id) => {
+    console.log("room join->", id);
+    room.join(id, socket, io);
+  });
+  socket.on("room:leave", (id) => {
+    console.log("room leave->", id);
+    if (room.leave(id, socket, io)) {
+      count.room--;
+      io.emit("count", count);
+    }
   });
 });
 
