@@ -25,7 +25,12 @@ export function create(data, socket, io) {
     socket.join(id);
     socket.emit('room:created', id);
     io.to(id).emit('room:update', room);
-    io.to(id).emit('room:message', `${socket.id.substring(0, 4)} 创建了房间`);
+    const message = {
+        from: "system",
+        to: "所有人",
+        content: `${socket.id.substring(0, 3)} 创建了房间`
+    }
+    io.to(id).emit('room:message', message);
     console.log("create", socket.rooms);
 }
 
@@ -41,12 +46,24 @@ export async function join(id, socket, io) {
     }
     socket.join(id);
     room.players.push(socket.id);
-    const ids = io.in(id).allSockets();
-    console.log("ids->", ids);
     socket.emit('room:joined', id);
     io.to(id).emit('room:update', room);
-    io.to(id).emit('room:message', `${socket.id.substring(0, 4)} 加入了房间`);
+    const message = {
+        from: "system",
+        to: "所有人",
+        content: `${socket.id.substring(0, 3)} 加入了房间`
+    }
+    io.to(id).emit('room:message', message);
     console.log("join", socket.rooms);
+    if (room.players.length === room.max) {
+        const message = {
+            from: "system",
+            to: "所有人",
+            content: "房间已满，游戏开始，请选择角色",
+            action: "role"
+        }
+        io.to(id).emit('room:message', message);
+    }
 }
 
 export function leave(id, socket, io) {
@@ -73,7 +90,11 @@ export function leave(id, socket, io) {
 
         // 检查是否找到了玩家，并发送相应的消息
         if (playerFound) {
-            const message = `${playerFound.substring(0, 4)}离开了房间`;
+            const message = {
+                from: "system",
+                to: "所有人",
+                content: `${playerFound.substring(0, 3)}离开了房间`
+            };
             io.to(id).emit('room:update', room); // 发送更新后的房间信息
             io.to(id).emit('room:message', message); // 发送玩家离开的消息
         } else {

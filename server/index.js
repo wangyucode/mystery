@@ -26,17 +26,17 @@ io.on("connection", (socket) => {
     io.emit("count", count);
   });
   socket.on("room:create", (data) => {
-    console.log("room created->", data);
+    console.log("create->", data);
     room.create(data, socket, io);
     count.room++;
     io.emit("count", count);
   });
   socket.on("room:join", (id) => {
-    console.log("room join->", id);
+    console.log("join->", id);
     room.join(id, socket, io);
   });
   socket.on("room:leave", (id) => {
-    console.log("room leave->", id);
+    console.log("leave->", id);
     if (room.leave(id, socket, io)) {
       count.room--;
       io.emit("count", count);
