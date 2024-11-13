@@ -107,7 +107,7 @@ export function rejoin(data, socket, io) {
             socket.emit('room:role');
         }
     } else {
-        socket.emit('room:error', '你不在这个房间种，请退出');
+        socket.emit('room:error', '你不在这个房间中，请退出');
     }
 
 }
@@ -142,4 +142,26 @@ export function role(data, socket, io) {
     io.to(data.roomId).emit('room:message', message);
     socket.emit('room:role:success');
     console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
+}
+
+export function message(data, socket, io) {
+    console.log("message", data);
+    const room = rooms[data.roomId];
+    if (!room) {
+        return;
+    }
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) {
+        return;
+    }
+    const message = {
+        from: player.role,
+        to: data.at,
+        content: data.content
+    }
+    if (data.at === "所有人") {
+        io.to(data.roomId).emit('room:message', message);
+    } else {
+        // io.to(data.roomId).emit('room:message', message);
+    }
 }

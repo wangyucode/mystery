@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Input, Chip, Card, Image, CardFooter, ModalFooter, CardHeader, CardBody, Divider, Avatar, Modal, ModalContent, ModalHeader, ModalBody } from "@nextui-org/react";
-import { useParams, useNavigate, createRoutesFromChildren } from "react-router-dom";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/16/solid";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowRightStartOnRectangleIcon, PlusCircleIcon, PaperAirplaneIcon } from "@heroicons/react/16/solid";
 import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
@@ -25,6 +25,8 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [roleModal, setRoleModal] = useState(false);
   const [role, setRole] = useState(roles[0]);
+  const [message, setMessage] = useState("");
+  const [at, setAt] = useState("所有人");
 
   useEffect(() => {
     socket.on("room:message", handleMessage);
@@ -85,20 +87,36 @@ export default function Home() {
     socket.emit("room:role", { roomId: Number.parseInt(params.id), role: role.name });
   }
 
+  function onClickAt() {
+    // setAt(at === "所有人" ? "所有人" : "所有人");
+  }
+
+  function onMessageChange(e) {
+    setMessage(e.target.value);
+  }
+
+  function sendMessage() {
+    if (!message) return;
+    socket.emit("room:message", { roomId: Number.parseInt(params.id), content: message, at });
+    setMessage("");
+  }
+
   return (
-    <main className="flex flex-col p-8 gap-4 text-center min-h-screen container mx-auto">
-      <div className="flex items-center gap-4 justify-center">
+    <main className="flex flex-col p-4 md:p-8 gap-4 text-center min-h-screen container mx-auto">
+
+      <div className="flex items-center gap-2 justify-center">
         <Image src={`/cover/${room.name}.png`} alt={room.name} width={48} height={48} />
         <h1 className="text-lg font-bold">{room.name}</h1>
+
       </div>
-      <div className="flex gap-4">
+      <div className="flex gap-2 justify-between items-center">
         <Chip color="primary">房间号：{params.id}</Chip>
-        <Chip color="secondary">人类数量：{room.players.length}</Chip>
-        <Chip color="secondary">最大数量：{room.max}</Chip>
+        <Chip color="secondary">人数：{room.players.length}/{room.max}</Chip>
         <div className="flex-1"></div>
+        <Toaster position="top-center" richColors />
         <Button
           color="danger"
-          endContent={<ArrowRightStartOnRectangleIcon className="size-5" />}
+          endContent={<ArrowRightStartOnRectangleIcon className="size-4" />}
           onClick={leave}
           size="sm"
         >
@@ -107,9 +125,9 @@ export default function Home() {
       </div>
       <div className="flex flex-1 flex-col gap-4">
         {messages.map((message, index) => (
-          <Card key={index} className="self-start">
+          <Card key={index} className={`${message.from === role.name ? "self-end" : "self-start"}`}>
             <CardHeader className="text-sm">
-              <Avatar className="w-6 h-6 text-tiny mr-2" name={message.from} isBordered color="secondary" size="sm" />
+              <Avatar className="w-6 h-6 text-tiny mr-2" name={message.from} isBordered={message.from === "system"} color="secondary" src={message.from === "system" ? null : `/avatars/dmxdzhyc/${message.from}.png`} />
               <p><b>{message.from}</b> 对 <span className="text-sky-500">@{message.to}</span> 说：</p>
             </CardHeader>
             <Divider />
@@ -119,9 +137,10 @@ export default function Home() {
           </Card>
         ))}
       </div>
-      <div className="flex gap-2">
-        <Input placeholder="发消息、输入@选择技能" className="flex-1"></Input>
-        <Button color="primary">发送</Button>
+      <div className="flex">
+        <Button className="rounded-r-none" color="secondary" variant="bordered" onClick={onClickAt}>@{at}</Button>
+        <Input placeholder="消息内容" className="flex-1" radius="none" variant="bordered" value={message} onChange={onMessageChange}></Input>
+        <Button className="rounded-l-none" color="primary" variant="bordered" endContent={<PaperAirplaneIcon className="size-4" />} onClick={sendMessage}>发送</Button>
       </div>
       <Modal isOpen={roleModal} isDismissible={false} isKeyboardDismissDisabled={true} hideCloseButton={true}>
         <ModalContent>
@@ -151,7 +170,7 @@ export default function Home() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Toaster position="top-center" richColors />
+
     </main>
   );
 }

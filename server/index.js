@@ -50,6 +50,10 @@ io.on("connection", (socket) => {
     console.log("role->", data);
     room.role(data, socket, io);
   });
+  socket.on("room:message", (data) => {
+    console.log("message->", data);
+    room.message(data, socket, io);
+  });
 });
 
 io.listen(3001);
