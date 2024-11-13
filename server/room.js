@@ -17,7 +17,7 @@ export function create(data, socket, io) {
     const randomIndex = Math.floor(Math.random() * unusedIds.length);
     const id = unusedIds.splice(randomIndex, 1)[0];
     const room = {
-        players: [socket.id],
+        players: [{ id: socket.id }],
         name: data.name,
         max: data.max
     };
@@ -27,10 +27,11 @@ export function create(data, socket, io) {
     io.to(id).emit('room:update', room);
     const message = {
         from: "system",
-        to: "所有人",
-        content: `${socket.id.substring(0, 3)} 创建了房间`
+        to: "你",
+        content: `你可以邀请其他玩家使用 ${id} 加入房间`
     }
-    io.to(id).emit('room:message', message);
+    socket.emit('room:message', message);
+    socket.emit('room:role');
     console.log("create", socket.rooms);
 }
 
@@ -45,61 +46,100 @@ export async function join(id, socket, io) {
         return;
     }
     socket.join(id);
-    room.players.push(socket.id);
+    room.players.push({ id: socket.id });
     socket.emit('room:joined', id);
     io.to(id).emit('room:update', room);
     const message = {
         from: "system",
         to: "所有人",
-        content: `${socket.id.substring(0, 3)} 加入了房间`
+        content: '有人加入了房间'
     }
     io.to(id).emit('room:message', message);
+    socket.emit('room:role');
     console.log("join", socket.rooms);
-    if (room.players.length === room.max) {
-        const message = {
-            from: "system",
-            to: "所有人",
-            content: "房间已满，游戏开始，请选择角色",
-            action: "role"
-        }
-        io.to(id).emit('room:message', message);
-    }
 }
 
 export function leave(id, socket, io) {
     const room = rooms[id];
     if (!room) {
-        socket.emit('room:error', '房间不存在');
         return false;
     }
-    if (room.players.length === 1) {
+    // remove player from room
+    room.players = room.players.filter(p => p.id !== socket.id);
+    const message = {
+        from: "system",
+        to: "所有人",
+        content: '有人离开了房间'
+    }
+    io.to(id).emit('room:message', message);
+    io.to(id).emit('room:update', room);
+    if (room.players.length === 0) {
         delete rooms[id];
         unusedIds.push(id);
         console.log("room deleted->", id);
         return true;
-    } else {
-        let playerFound = null;
-
-        for (let i = 0; i < room.players.length; i++) {
-            if (room.players[i] === socket.id) {
-                playerFound = room.players[i]; // 保存找到的玩家ID
-                room.players.splice(i, 1); // 从数组中移除该玩家
-                break; // 找到后退出循环
-            }
-        }
-
-        // 检查是否找到了玩家，并发送相应的消息
-        if (playerFound) {
-            const message = {
-                from: "system",
-                to: "所有人",
-                content: `${playerFound.substring(0, 3)}离开了房间`
-            };
-            io.to(id).emit('room:update', room); // 发送更新后的房间信息
-            io.to(id).emit('room:message', message); // 发送玩家离开的消息
-        } else {
-            // 可选：如果没有找到玩家，可以发送一个不同的消息或者进行其他处理
-            console.log('未找到对应的玩家ID:', socket.id);
-        }
     }
+    return false;
+}
+
+export function rejoin(data, socket, io) {
+    const room = rooms[data.roomId];
+    if (!room) {
+        socket.emit('room:error', '房间不存在，请退出');
+        return;
+    }
+    io.to(data.socketId).socketsLeave(data.roomId);
+    io.to(data.socketId).disconnectSockets(true);
+
+    const player = room.players.find(p => p.id === data.socketId);
+    if (player) {
+        socket.join(data.roomId);
+        player.id = socket.id;
+        const message = {
+            from: "system",
+            to: "你",
+            content: '重连成功'
+        }
+        socket.emit('room:message', message);
+        socket.emit('room:rejoined', data.roomId);
+        io.to(data.roomId).emit('room:update', room);
+        if (!player.role) {
+            socket.emit('room:role');
+        }
+    } else {
+        socket.emit('room:error', '你不在这个房间种，请退出');
+    }
+
+}
+
+export function role(data, socket, io) {
+    const room = rooms[data.roomId];
+    if (!room) {
+        socket.emit('room:error', '房间不存在');
+        return;
+    }
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) {
+        socket.emit('room:error', '你不在房间中');
+        return;
+    }
+    if (player.role) {
+        socket.emit('room:error', '你已经选择了角色');
+        return;
+    }
+    const role = room.players.find(p => p.role === data.role);
+    if (role) {
+        socket.emit('room:error', `${data.role} 已被选择`);
+        return;
+    }
+    player.role = data.role;
+    io.to(data.roomId).emit('room:update', room);
+    const message = {
+        from: "system",
+        to: "所有人",
+        content: `${data.role} 已被选择`
+    }
+    io.to(data.roomId).emit('room:message', message);
+    socket.emit('room:role:success');
+    console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
 }

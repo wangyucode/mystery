@@ -42,10 +42,16 @@ io.on("connection", (socket) => {
       io.emit("count", count);
     }
   });
-
-  socket.on("room:message", (data) => {
+  socket.on("room:rejoin", (data) => {
+    console.log("rejoin->", data);
+    room.rejoin(data, socket, io);
   });
+  socket.on("room:role", (data) => {
+    console.log("role->", data);
+    room.role(data, socket, io);
+  });
+});
 
-  io.listen(3001);
+io.listen(3001);
 
-  console.log("server listening on port 3001");
+console.log("server listening on port 3001");

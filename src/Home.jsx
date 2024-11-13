@@ -12,17 +12,17 @@ import {
   ArrowRightEndOnRectangleIcon,
   SquaresPlusIcon,
 } from "@heroicons/react/16/solid";
+import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
 
 export default function Home() {
   const stories = [
-    { title: "大明星的最后演出", people: 2, image: "/cover/dmxdzhyc.png" },
-    { title: "网红校花的堕落", people: 5, image: "/cover/whxhddl.png" },
+    { title: "大明星的最后演出", people: 2 },
+    { title: "网红校花的堕落", people: 5 },
   ];
 
   const [select, setSelect] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [roomId, setRoomId] = useState("");
   const [max, setMax] = useState(1);
@@ -30,20 +30,21 @@ export default function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("useEffect->", select);
     socket.on("room:created", (id) => {
       console.log("room:created->", id);
+      localStorage.setItem("game", JSON.stringify({ roomId: id, socketId: socket.id }));
       navigate(`/room/${id}`, { replace: true });
     });
 
     socket.on("room:joined", (id) => {
       console.log("room:joined->", id);
+      localStorage.setItem("game", JSON.stringify({ roomId: id, socketId: socket.id }));
       navigate(`/room/${id}`, { replace: true });
     });
 
     socket.on("room:error", (error) => {
       console.log("room:error->", error);
-      setError(error);
+      toast.error(error);
       setLoading(false);
     });
 
@@ -57,11 +58,11 @@ export default function Home() {
   function create() {
     console.log("create->", select);
     if (!select) {
-      setError("⚠️ 请选择剧本");
+      toast.error("请选择剧本");
       return;
     }
     if (select === "网红校花的堕落") {
-      setError("⚠️ 剧本未上线，敬请期待！");
+      toast.error("剧本未上线，敬请期待！");
       return;
     }
     setLoading(true);
@@ -72,7 +73,7 @@ export default function Home() {
     const id = Number.parseInt(roomId);
     console.log("join->", id);
     if (!id) {
-      setError("⚠️ 请输入房间号");
+      toast.error("请输入房间号");
       return;
     }
     setLoading(true);
@@ -81,7 +82,6 @@ export default function Home() {
 
   function storyClick(e) {
     console.log("storyClick->", e.currentTarget.dataset.title);
-    setError("");
     setSelect(e.currentTarget.dataset.title);
     setMax(Number.parseInt(e.currentTarget.dataset.people));
   }
@@ -102,7 +102,7 @@ export default function Home() {
               <Image
                 width={192}
                 height={192}
-                src={story.image}
+                src={`/cover/${story.title}.png`}
                 alt={story.title}
                 radius="none"
               ></Image>
@@ -114,13 +114,6 @@ export default function Home() {
           </Card>
         ))}
       </div>
-      {error && (
-        <div
-          className={`text-sm rounded-lg bg-amber-200 text-amber-600 border p-2 border-amber-600`}
-        >
-          {error}
-        </div>
-      )}
       <Button
         color="primary"
         className="w-full"
@@ -147,6 +140,7 @@ export default function Home() {
           加入
         </Button>
       </div>
+      <Toaster position="top-center" richColors />
     </main>
   );
 }
