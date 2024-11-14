@@ -188,6 +188,14 @@ export function role(data, socket, io) {
     }
     io.to(data.roomId).emit('room:message', message);
     socket.emit('room:role:success');
+    if (room.players.every(p => p.role)) {
+        const message = {
+            from: "系统",
+            to: "所有人",
+            content: "所有角色已选择完毕，正在邀请AI主持人加入..."
+        }
+        io.to(data.roomId).emit('room:message', message);
+    }
     console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
 }
 
