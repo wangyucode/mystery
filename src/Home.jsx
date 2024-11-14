@@ -17,16 +17,10 @@ import { toast, Toaster } from "sonner";
 import socket from "./socket";
 
 export default function Home() {
-  const stories = [
-    { title: "大明星的最后演出", people: 2 },
-    { title: "网红校花的堕落", people: 5 },
-  ];
-
   const [select, setSelect] = useState("");
   const [loading, setLoading] = useState(false);
   const [roomId, setRoomId] = useState("");
-  const [max, setMax] = useState(1);
-
+  const [stories, setStories] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,10 +42,18 @@ export default function Home() {
       setLoading(false);
     });
 
+    socket.on("story:list", (stories) => {
+      console.log("story:list->", stories);
+      setStories(stories);
+    });
+
+    socket.emit("story:list");
+
     return () => {
       socket.off("room:created");
       socket.off("room:joined");
       socket.off("room:error");
+      socket.off("story:list");
     };
   }, []);
 
@@ -61,12 +63,8 @@ export default function Home() {
       toast.error("请选择剧本");
       return;
     }
-    if (select === "网红校花的堕落") {
-      toast.error("剧本未上线，敬请期待！");
-      return;
-    }
     setLoading(true);
-    socket.emit("room:create", { name: select, max });
+    socket.emit("room:create", select);
   }
 
   function join() {
@@ -81,9 +79,7 @@ export default function Home() {
   }
 
   function storyClick(e) {
-    console.log("storyClick->", e.currentTarget.dataset.title);
     setSelect(e.currentTarget.dataset.title);
-    setMax(Number.parseInt(e.currentTarget.dataset.people));
   }
 
   return (

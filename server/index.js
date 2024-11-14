@@ -2,8 +2,7 @@ import { Server } from "socket.io";
 import Koa from "koa";
 import { createServer } from "http";
 
-import * as room from "./room.js";
-
+import * as handlers from "./handlers.js";
 let count = { user: 0, ai: 0, room: 0 };
 
 
@@ -25,34 +24,38 @@ io.on("connection", (socket) => {
     count.user--;
     io.emit("count", count);
   });
-  socket.on("room:create", (data) => {
-    console.log("create->", data);
-    room.create(data, socket, io);
+  socket.on("room:create", (title) => {
+    console.log("create->", title);
+    handlers.create(title, socket, io);
     count.room++;
     io.emit("count", count);
   });
   socket.on("room:join", (id) => {
     console.log("join->", id);
-    room.join(id, socket, io);
+    handlers.join(id, socket, io);
   });
   socket.on("room:leave", (id) => {
     console.log("leave->", id);
-    if (room.leave(id, socket, io)) {
+    if (handlers.leave(id, socket, io)) {
       count.room--;
       io.emit("count", count);
     }
   });
   socket.on("room:rejoin", (data) => {
     console.log("rejoin->", data);
-    room.rejoin(data, socket, io);
+    handlers.rejoin(data, socket, io);
   });
   socket.on("room:role", (data) => {
     console.log("role->", data);
-    room.role(data, socket, io);
+    handlers.role(data, socket, io);
   });
   socket.on("room:message", (data) => {
     console.log("message->", data);
-    room.message(data, socket, io);
+    handlers.message(data, socket, io);
+  });
+  socket.on("story:list", () => {
+    console.log("story:list->");
+    handlers.stroyList(socket);
   });
 });
 
