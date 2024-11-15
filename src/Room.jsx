@@ -40,7 +40,7 @@ export default function Home() {
 
   function handleUpdate(data) {
     console.log("room:update->", data);
-    setRoom(data);
+    setRoom({ ...data });
   }
 
   function handleError(message) {
@@ -75,7 +75,7 @@ export default function Home() {
     <main className="flex flex-col p-4 md:p-8 gap-4 text-center min-h-screen container mx-auto">
 
       <div className="flex items-center gap-2 justify-center">
-        <Image src={`/cover/${room.title}.png`} alt={room.title} width={48} height={48} />
+        <Image src={`/cover/${room.title}.png`} alt={room.title} width={48} height={48} disableSkeleton />
         <h1 className="text-lg font-bold">{room.title}</h1>
 
       </div>
