@@ -1,4 +1,5 @@
 import stories from "./stories.json" assert { type: "json" };
+import * as host from "./host.js";
 
 const MAX_ROOMS = 1000;
 
@@ -195,6 +196,7 @@ export function role(data, socket, io) {
             content: "所有角色已选择完毕，正在邀请AI主持人加入..."
         }
         io.to(data.roomId).emit('room:message', message);
+        host.create(room.title);
     }
     console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
 }
