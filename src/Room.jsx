@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Button, Input, Chip, Image, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import { Button, Input, Chip, Image, Popover, PopoverTrigger, PopoverContent, ScrollShadow } from "@nextui-org/react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightStartOnRectangleIcon, PaperAirplaneIcon } from "@heroicons/react/16/solid";
 import { toast, Toaster } from "sonner";
@@ -17,6 +17,7 @@ export default function Home() {
   const [aiTyping, setAiTyping] = useState("");
   const [isHostJoined, setIsHostJoined] = useState(false);
   const [isAtListOpen, setIsAtListOpen] = useState(false);
+  const messageListRef = useRef(null);
 
   useEffect(() => {
     socket.on("room:message", handleMessage);
@@ -30,6 +31,12 @@ export default function Home() {
       socket.off("room:rejoined", handleRejoined);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   function handleMessage(message) {
     console.log("room:message->", message);
@@ -91,8 +98,14 @@ export default function Home() {
     setMessage("");
   }
 
+  function onKeyDown(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  }
+
   return (
-    <main className="flex flex-col p-4 md:p-8 gap-4 text-center min-h-screen container mx-auto">
+    <main className="flex flex-col p-4 md:p-8 gap-2 text-center h-screen container mx-auto">
 
       <div className="flex items-center gap-2 justify-center">
         <Image src={`/cover/${room.title}.png`} alt={room.title} width={48} height={48} disableSkeleton />
@@ -113,10 +126,12 @@ export default function Home() {
           退出
         </Button>
       </div>
-      <div className="flex flex-1 flex-col gap-4">
-        {messages.map((message, index) => (
-          <Message key={index} message={message} room={room} />
-        ))}
+      <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}>
+        <div className="flex flex-col gap-4">
+          {messages.map((message, index) => (
+            <Message key={index} message={message} room={room} />
+          ))}
+        </div>
       </div>
       <div className="flex">
         <Popover isOpen={isAtListOpen} onOpenChange={setIsAtListOpen}>
@@ -126,12 +141,12 @@ export default function Home() {
           <PopoverContent className="flex flex-col">
             <Button size="sm" className="bg-white hover:bg-gray-200" onClick={onClickAtItem}>所有人</Button>
             <Button size="sm" className={`bg-white hover:bg-gray-200 ${!isHostJoined ? "text-gray-500" : ""}`} onClick={onClickAtItem} disabled={!isHostJoined}>主持人</Button>
-            {room.players.map(player => (
+            {room.players.filter(player => player.id !== socket.id).map(player => (
               <Button size="sm" className="bg-white hover:bg-gray-200" key={player.id} onClick={onClickAtItem}>{player.role || player.id.slice(0, 4)}</Button>
             ))}
           </PopoverContent>
         </Popover>
-        <Input placeholder="消息内容" className="flex-1" radius="none" variant="bordered" value={message} onChange={onMessageChange}></Input>
+        <Input placeholder="消息内容" className="flex-1" radius="none" variant="bordered" value={message} onChange={onMessageChange} onKeyDown={onKeyDown}></Input>
         <Button className="rounded-l-none" color="primary" variant="bordered" endContent={<PaperAirplaneIcon className="size-4" />} onClick={sendMessage}>发送</Button>
       </div>
 

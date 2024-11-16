@@ -35,10 +35,10 @@ export function roundPrompt(round, role) {
     return `当前是第${round}轮，按照剧本原文，给出 ${role} 的${round === 1 ? " 角色简介" : ""} 剧情 和 线索选项，线索选项仅展示线索名称，玩家选择后再展示线索内容`
 }
 
-export function nextPrompt(round, role) {
-    return `当前是第${round}轮，按照剧本原文，根据玩家消息，理解玩家意图，如果玩家选择了线索，回复线索内容，如果有下一轮，回复以"<next>"结束，如果没有下一轮回复以"<end>"结束。否则，回复玩家消息并复述线索名称，让玩家选择。以下是玩家消息："${role} 对 主持人 说 让我想想"`
+export function nextPrompt(round, role, message) {
+    return `当前是第${round}轮，按照剧本原文，根据玩家消息，理解玩家意图，如果玩家选择了线索，回复线索内容，如果有第${round + 1}轮，回复以"<next>"结束，如果没有第${round + 1}轮回复以"<end>"结束。否则，回复玩家消息并复述线索名称，让玩家选择。以下是玩家消息："${role} 对 主持人 说 ${message}"`
 }
 
-export function endPrompt(round, role) {
-    return `游戏已结束，结合玩家消息和剧本给出回复，如果玩家做出了有效回答，无论对错，给出结合玩家之前选择的线索帮助玩家分析并揭示剧本中的真相，回复以"<finish>"结束; 如果玩家没有做出有效回答，鼓励玩家继续回答，回复以"<continue>"结束。玩家消息："${role} 对 主持人 说 让我想想"`
+export function endPrompt(role, message) {
+    return `游戏已结束，结合玩家消息和剧本给出回复，如果玩家做出了有效回答，无论对错，给出结合玩家之前选择的线索帮助玩家分析并揭示剧本中的真相，回复以"<finish>"结束; 如果玩家没有做出有效回答，鼓励玩家继续回答。玩家消息："${role} 对 主持人 说 ${message}"`
 }

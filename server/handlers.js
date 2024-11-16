@@ -28,7 +28,7 @@ export function create(title, socket, io) {
         players: [{ id: socket.id }],
         title: story.title,
         people: story.people,
-        round: 1,
+        round: 0,
         messages: [],
         tokens: 0
     };
@@ -52,7 +52,7 @@ export function create(title, socket, io) {
         }
     }
     socket.emit('room:message', roleMessage);
-    console.log("create", socket.rooms);
+    console.log("game created->", JSON.stringify(room), new Date().toLocaleString());
 }
 
 export async function join(id, socket, io) {
@@ -158,7 +158,9 @@ export function rejoin(data, socket, io) {
             socket.emit('room:message', roleMessage);
             if (room.messages?.length) {
                 for (const message of room.messages) {
-                    socket.emit('room:message', message);
+                    if (message.role === "assistant") {
+                        socket.emit('room:message', message);
+                    }
                 }
             }
         }
@@ -227,11 +229,17 @@ export function message(data, socket, io) {
     if (data.at === "所有人") {
         io.to(data.roomId).emit('room:message', message);
     } else if (data.at === "主持人") {
-        host.sendMessage(data.roomId, message);
+        if (room.round > 0) {
+            host.next(room, message, io);
+        } else if (room.round === -1) {
+            host.end(room, message, io);
+        }
+        socket.emit('room:message', message);
     } else {
         const player = room.players.find(p => p.role === data.at || p.id === data.at);
         if (player) {
             io.to(player.id).emit('room:message', message);
         }
+        socket.emit('room:message', message);
     }
 }
