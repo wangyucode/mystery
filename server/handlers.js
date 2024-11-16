@@ -27,7 +27,10 @@ export function create(title, socket, io) {
         id,
         players: [{ id: socket.id }],
         title: story.title,
-        people: story.people
+        people: story.people,
+        round: 1,
+        messages: [],
+        tokens: 0
     };
     rooms[id] = room;
     socket.join(id);
@@ -153,6 +156,11 @@ export function rejoin(data, socket, io) {
                 }
             }
             socket.emit('room:message', roleMessage);
+            if (room.messages?.length) {
+                for (const message of room.messages) {
+                    socket.emit('room:message', message);
+                }
+            }
         }
     } else {
         socket.emit('room:error', '你不在这个房间中，请退出');

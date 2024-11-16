@@ -36,14 +36,15 @@ export default function Home() {
     } else {
       setAiTyping("");
     }
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage?.extra?.ai && !lastMessage?.extra?.done) {
-      // replace last message
-      setMessages(prvMessages => [...prvMessages.slice(0, -1), message]);
-    } else {
-      setMessages(prvMessages => [...prvMessages, message]);
-    }
 
+    setMessages(prvMessages => {
+      const lastMessage = prvMessages[prvMessages.length - 1];
+      if (lastMessage?.extra?.ai && !lastMessage?.extra?.done) {
+        return [...prvMessages.slice(0, -1), message];
+      } else {
+        return [...prvMessages, message];
+      }
+    });
   }
 
   function handleRejoined(roomId) {

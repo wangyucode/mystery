@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import * as prompts from "./prompts.js";
-import { io } from "socket.io-client";
 
 import dotenv from "dotenv";
 
@@ -11,56 +10,46 @@ const openai = new OpenAI({
     baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
 });
 
-// export async function create(title, socket, io) {
-//     const data = {
-//         bot_id: "7437110083068215323",
-//         user_id: "wycode",
-//         stream: true,
-//         additional_messages: [
-//             {
-//                 role: "user",
-//                 content: startPrompt(title),
-//                 content_type: "text",
-//             },
-//         ],
-//     };
-//     try {
-//         const res = await fetch("https://api.coze.cn/v3/chat", {
-//             method: "POST",
-//             headers: {
-//                 "Content-Type": "application/json",
-//                 "Authorization": `Bearer ${process.env.KOUZI_API_KEY}`,
-//             },
-//             body: JSON.stringify(data),
-//         });
-//         let result = '';
-//         for await (const chunk of res.body) {
-//             const line = chunk.toString('utf-8');
-//             console.log(line);
-//             result += line;
-//         }
-//         console.log("result->", result);
-//     } catch (error) {
-//         console.error(error);
-//     }
+const model = "qwen-turbo";
 
-// }
 
 export async function start(room, io) {
     const systemPrompt = await prompts.systemPrompt(room.title);
-    const messages = [
+    let messages = [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompts.startPrompt() }
     ];
-    room.messages = messages;
+    room.messages = [];
     try {
-        io.to(room.id).emit('room:message', { from: "主持人", to: "所有人", content: "正在输入...", extra: { done: false, ai: true } });
-        const res = await openai.chat.completions.create({
-            model: "qwen-turbo",
-            messages
+        const loadingMessage = { from: "主持人", to: "所有人", content: "正在输入...", extra: { done: false, ai: true } };
+        io.to(room.id).emit('room:message', loadingMessage);
+        let res = await openai.chat.completions.create({
+            model,
+            messages,
+            temperature: 0.1
         });
         console.log("ai response->", JSON.stringify(res));
-        io.to(room.id).emit('room:message', { from: "主持人", to: "所有人", content: res.choices[0].message.content, extra: { done: true, ai: true } });
+        let content = res.choices[0].message.content;
+        room.tokens += res.usage.total_tokens;
+        let message = { from: "主持人", to: "所有人", content, extra: { done: true, ai: true } };
+        room.messages.push(message);
+        io.to(room.id).emit('room:message', message);
+        messages.push({ role: "assistant", content });
+
+        for (const player of room.players) {
+            io.to(player.id).emit('room:message', loadingMessage);
+            messages.push({ role: "user", content: prompts.roundPrompt(room.round, player.role) });
+            res = await openai.chat.completions.create({
+                model,
+                messages,
+                temperature: 0.1
+            });
+            content = res.choices[0].message.content;
+            message = { from: "主持人", to: player.role, content, extra: { done: true, ai: true } };
+            room.messages.push(message);
+            io.to(player.id).emit('room:message', message);
+            messages.push({ role: "assistant", content });
+        }
     } catch (error) {
         console.error(error);
     }
