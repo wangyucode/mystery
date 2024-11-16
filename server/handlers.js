@@ -226,7 +226,12 @@ export function message(data, socket, io) {
     }
     if (data.at === "所有人") {
         io.to(data.roomId).emit('room:message', message);
+    } else if (data.at === "主持人") {
+        host.sendMessage(data.roomId, message);
     } else {
-        // io.to(data.roomId).emit('room:message', message);
+        const player = room.players.find(p => p.role === data.at || p.id === data.at);
+        if (player) {
+            io.to(player.id).emit('room:message', message);
+        }
     }
 }

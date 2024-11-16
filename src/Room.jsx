@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Chip, Image } from "@nextui-org/react";
+import { Button, Input, Chip, Image, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightStartOnRectangleIcon, PaperAirplaneIcon } from "@heroicons/react/16/solid";
 import { toast, Toaster } from "sonner";
@@ -15,6 +15,8 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [at, setAt] = useState("所有人");
   const [aiTyping, setAiTyping] = useState("");
+  const [isHostJoined, setIsHostJoined] = useState(false);
+  const [isAtListOpen, setIsAtListOpen] = useState(false);
 
   useEffect(() => {
     socket.on("room:message", handleMessage);
@@ -40,6 +42,7 @@ export default function Home() {
     setMessages(prvMessages => {
       const lastMessage = prvMessages[prvMessages.length - 1];
       if (lastMessage?.extra?.ai && !lastMessage?.extra?.done) {
+        setIsHostJoined(true);
         return [...prvMessages.slice(0, -1), message];
       } else {
         return [...prvMessages, message];
@@ -69,8 +72,9 @@ export default function Home() {
   }
 
 
-  function onClickAt() {
-    // setAt(at === "所有人" ? "所有人" : "所有人");
+  function onClickAtItem(e) {
+    setAt(e.target.innerText);
+    setIsAtListOpen(false);
   }
 
   function onMessageChange(e) {
@@ -115,7 +119,18 @@ export default function Home() {
         ))}
       </div>
       <div className="flex">
-        <Button className="rounded-r-none" color="secondary" variant="bordered" onClick={onClickAt}>@{at}</Button>
+        <Popover isOpen={isAtListOpen} onOpenChange={setIsAtListOpen}>
+          <PopoverTrigger>
+            <Button className="rounded-r-none" color="secondary" variant="bordered">@{at}</Button>
+          </PopoverTrigger>
+          <PopoverContent className="flex flex-col">
+            <Button size="sm" className="bg-white hover:bg-gray-200" onClick={onClickAtItem}>所有人</Button>
+            <Button size="sm" className={`bg-white hover:bg-gray-200 ${!isHostJoined ? "text-gray-500" : ""}`} onClick={onClickAtItem} disabled={!isHostJoined}>主持人</Button>
+            {room.players.map(player => (
+              <Button size="sm" className="bg-white hover:bg-gray-200" key={player.id} onClick={onClickAtItem}>{player.role || player.id.slice(0, 4)}</Button>
+            ))}
+          </PopoverContent>
+        </Popover>
         <Input placeholder="消息内容" className="flex-1" radius="none" variant="bordered" value={message} onChange={onMessageChange}></Input>
         <Button className="rounded-l-none" color="primary" variant="bordered" endContent={<PaperAirplaneIcon className="size-4" />} onClick={sendMessage}>发送</Button>
       </div>
