@@ -196,7 +196,7 @@ export function role(data, socket, io) {
             content: "所有角色已选择完毕，正在邀请AI主持人加入..."
         }
         io.to(data.roomId).emit('room:message', message);
-        host.create(room.title);
+        host.start(room, io);
     }
     console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
 }

@@ -1,12 +1,10 @@
 import { Server } from "socket.io";
 import Koa from "koa";
 import { createServer } from "http";
-import dotenv from "dotenv";
 
 import * as handlers from "./handlers.js";
 let count = { user: 0, ai: 0, room: 0 };
 
-dotenv.config();
 
 const app = new Koa();
 const httpServer = createServer(app.callback());

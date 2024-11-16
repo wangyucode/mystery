@@ -14,6 +14,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [at, setAt] = useState("所有人");
+  const [aiTyping, setAiTyping] = useState("");
 
   useEffect(() => {
     socket.on("room:message", handleMessage);
@@ -30,7 +31,19 @@ export default function Home() {
 
   function handleMessage(message) {
     console.log("room:message->", message);
-    setMessages(prvMessages => [...prvMessages, message]);
+    if (message.extra?.ai && !message.extra?.done) {
+      setAiTyping(message.from);
+    } else {
+      setAiTyping("");
+    }
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.extra?.ai && !lastMessage?.extra?.done) {
+      // replace last message
+      setMessages(prvMessages => [...prvMessages.slice(0, -1), message]);
+    } else {
+      setMessages(prvMessages => [...prvMessages, message]);
+    }
+
   }
 
   function handleRejoined(roomId) {
@@ -47,8 +60,6 @@ export default function Home() {
     console.log("room:error->", message);
     toast.error(message);
   }
-
-
 
   function leave() {
     socket.emit("room:leave", room.id);
@@ -67,6 +78,10 @@ export default function Home() {
 
   function sendMessage() {
     if (!message) return;
+    if (aiTyping) {
+      toast.warning(`${aiTyping} 正在说话，请安静`);
+      return;
+    }
     socket.emit("room:message", { roomId: room.id, content: message, at });
     setMessage("");
   }
@@ -103,7 +118,6 @@ export default function Home() {
         <Input placeholder="消息内容" className="flex-1" radius="none" variant="bordered" value={message} onChange={onMessageChange}></Input>
         <Button className="rounded-l-none" color="primary" variant="bordered" endContent={<PaperAirplaneIcon className="size-4" />} onClick={sendMessage}>发送</Button>
       </div>
-      {/* <RoleModal isOpen={isRoleModalOpen}/> */}
 
     </main>
   );
