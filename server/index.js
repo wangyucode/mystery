@@ -3,9 +3,11 @@ import Koa from "koa";
 import { createServer } from "http";
 
 import * as handlers from "./handlers.js";
+import { readStroies } from "./stories.js";
+
 let count = { user: 0, ai: 0, room: 0 };
 
-
+readStroies();
 const app = new Koa();
 const httpServer = createServer(app.callback());
 const io = new Server(httpServer, {

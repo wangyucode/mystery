@@ -6,7 +6,7 @@ export default function Message({ message, room }) {
     if (message.extra?.ai && !message.extra?.done) {
         return <TypingMessage />;
     }
-    return message.from === "系统"
+    return message.from === "主持人"
         ? <SystemMessage message={message} room={room} />
         : <PlayerMessage message={message} room={room} />;
 }

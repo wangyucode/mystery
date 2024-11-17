@@ -6,7 +6,7 @@ import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
 import Message from "./components/Message";
-
+import { getDisplayName } from "./utils";
 export default function Home() {
 
   const navigate = useNavigate();
@@ -60,6 +60,7 @@ export default function Home() {
   function handleRejoined(roomId) {
     console.log("room:rejoined->", roomId);
     localStorage.setItem("game", JSON.stringify({ roomId, socketId: socket.id }));
+    // setMessages([...messages]);
   }
 
   function handleUpdate(data) {
@@ -128,9 +129,7 @@ export default function Home() {
       </div>
       <div className="flex-1 overflow-y-auto p-4" ref={messageListRef}>
         <div className="flex flex-col gap-4">
-          {messages.map((message, index) => (
-            <Message key={index} message={message} room={room} />
-          ))}
+          {messages.map((message, index) => <Message key={index} message={message} room={room} />)}
         </div>
       </div>
       <div className="flex">

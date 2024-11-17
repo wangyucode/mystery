@@ -1,9 +1,11 @@
 import { Card, CardBody, Avatar } from "@nextui-org/react";
-import { useState, useEffect } from "react";
-import { ServerStackIcon } from "@heroicons/react/16/solid";
+import { useEffect } from "react";
+
 
 import socket from "../socket";
 import ExtraRoleContent from "./ExtraRoleContent";
+import HostIcon from "/src/assets/host.png";
+import { getDisplayName } from "../utils";
 
 
 export default function SystemMessage({ message, room }) {
@@ -25,16 +27,15 @@ export default function SystemMessage({ message, room }) {
             <CardBody className="flex flex-row">
                 <Avatar
                     className="w-7 h-7 text-tiny mr-2"
-                    icon={<ServerStackIcon className="size-4" />}
+                    src={HostIcon}
                     color="secondary"
                 />
                 <div className="flex flex-col flex-1">
-                    <b className="text-xs">{message.from}</b>
-                    <p className="text-sm">
-                        <span className="text-sky-500">@{message.to}：</span>
-                        {message.content}
+                    <b className="text-xs">{message.from}（AI）</b>
+                    <div className="text-sm">
+                        <p className={`whitespace-pre-line ${message.extra ? 'font-bold text-amber-500' : ''}`}><span className="text-sky-500 font-normal">@{getDisplayName(message.to, room.players.find(p => p.id === message.to), socket.id)}：</span>{message.content}</p>
                         {message.extra?.roles && <ExtraRoleContent extra={message.extra} room={room} />}
-                    </p>
+                    </div>
                 </div>
             </CardBody>
         </Card>
