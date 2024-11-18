@@ -25,7 +25,7 @@ export default function PlayerMessage({ message, room }) {
                         <b className="text-sky-500">@{getDisplayName(room.players.find(p => p.id === message.to) || message.to, socket.id)}：</b>
                         <span className="text-gray-500">{new Date(message.time).toLocaleTimeString()}</span>
                     </p>
-                    <Markdown className="text-sm whitespace-pre-wrap">
+                    <Markdown className="text-sm message">
                         {message.content}
                     </Markdown>
                 </div>

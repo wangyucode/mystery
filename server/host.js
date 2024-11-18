@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import * as promptsUtil from "./prompts.js";
+import * as handlers from "./handlers.js";
 
 import dotenv from "dotenv";
 
@@ -22,9 +23,9 @@ export async function getReplyFromAi(room, message, io) {
         const msg = room.messages[i];
         if (msg.from === "host" && (msg.to === message.from || msg.to === "all")) {
             lastHostMessageContent = msg.content;
-            lastHostMessageTo = msg.to;
+            lastHostMessageTo = msg.to === "all" ? "所有人" : room.players.find(p => p.id === msg.to)?.role || msg.to.slice(0, 4);
             if (msg?.extra?.roles?.length) {
-                lastHostMessageContent += "\n角色列表：" + msg.extra.roles.map(r => r.name).join(",");
+                lastHostMessageContent += `\n角色列表：\n${msg.extra.roles.map(r => `- ${r.name}: ${r.desc}`).join('\n')}`;
             }
             break;
         }
@@ -58,13 +59,9 @@ export async function getReplyFromAi(room, message, io) {
         const replyMessage = { from: "host", to: message.from, content: jsonReply.question, time: new Date().getTime(), extra: { done: true, ai: true } };
         io.to(message.from).emit('room:message', replyMessage);
     } else if (jsonReply?.role) {
-        const player = room.players.find(p => p.id === message.from);
-        if (player) {
-            player.role = jsonReply.role;
-            const replyMessage = { from: "host", to: "all", content: `${player.id.slice(0, 4)} 选择扮演角色：${player.role}`, time: new Date().getTime(), extra: { done: true, ai: true } };
-            io.to(room.id).emit('room:message', replyMessage);
-
-        }
+        handlers.role(room, message, jsonReply.role, io);
+        // const replyMessage = { from: "host", to: "all", content: `${player.id.slice(0, 4)} 选择扮演角色：${player.role}`, time: new Date().getTime(), extra: { done: true, ai: true } };
+        // io.to(room.id).emit('room:message', replyMessage);
     }
 }
 

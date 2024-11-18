@@ -216,13 +216,8 @@ export function rejoin(data, socket, io) {
     }
 }
 
-export function role(data, socket, io) {
-    const room = rooms[data.roomId];
-    if (!room) {
-        socket.emit('room:error', '房间不存在');
-        return;
-    }
-    const player = room.players.find(p => p.id === socket.id);
+export function role(room, message, role, io) {
+    const player = room.players.find(p => p.id === message.from);
     if (!player) {
         socket.emit('room:error', '你不在房间中');
         return;
@@ -231,38 +226,51 @@ export function role(data, socket, io) {
         socket.emit('room:error', '你已经选择了角色');
         return;
     }
-    const role = room.players.find(p => p.role === data.role);
-    if (role) {
-        socket.emit('room:error', `${data.role} 已被选择`);
+    const playerSelected = room.players.find(p => p.role === role);
+    if (playerSelected) {
+        socket.emit('room:error', `${role} 已被选择`);
         return;
     }
-    player.role = data.role;
+    player.role = role;
     const frontendRoom = {
-        id: data.roomId,
+        id: room.id,
         title: room.story.title,
         people: room.story.people,
         players: room.players
     };
-    io.to(data.roomId).emit('room:update', frontendRoom);
-    const message = {
+    io.to(room.id).emit('room:update', frontendRoom);
+    const roleMessage = {
         from: "host",
         to: "all",
-        content: `${data.role} 已被选择`,
+        content: `${player.id.slice(0, 4)} 选择扮演角色：${role}`,
         time: new Date().getTime()
     }
-    io.to(data.roomId).emit('room:message', message);
-    socket.emit('room:role:success');
+    io.to(room.id).emit('room:message', roleMessage);
     if (room.players.every(p => p.role)) {
-        const message = {
+        const startMessage = {
             from: "host",
             to: "all",
-            content: "所有角色已选择完毕，正在邀请AI主持人加入...",
+            content: "所有角色已选择完毕，开始第1轮",
             time: new Date().getTime()
         }
-        io.to(data.roomId).emit('room:message', message);
-        host.start(room, io);
+        io.to(room.id).emit('room:message', startMessage);
+        nextRound(room, io);
     }
-    console.log("role", `roomId: ${data.roomId}, socketId: ${socket.id}, role: ${data.role}`);
+}
+
+function nextRound(room, io) {
+    room.round++;
+    for (const player of room.players) {
+        const content = `# 第${room.round}轮\n## ${player.role}的剧情:\n${room.story.rounds[room.round - 1][player.role].story}\n## 线索选项：\n${room.story.rounds[room.round - 1][player.role].clues.map(c => `- ${c.key}: ${c.title}`).join('\n')}\n请选择你的行动`;
+        const message = {
+            from: "host",
+            to: player.id,
+            content,
+            time: new Date().getTime()
+        }
+        io.to(player.id).emit('room:message', message);
+        room.messages.push(message);
+    }
 }
 
 export function message(data, socket, io) {

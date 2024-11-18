@@ -47,10 +47,6 @@ io.on("connection", (socket) => {
     console.log("rejoin->", data);
     handlers.rejoin(data, socket, io);
   });
-  socket.on("room:role", (data) => {
-    console.log("role->", data);
-    handlers.role(data, socket, io);
-  });
   socket.on("room:message", (data) => {
     console.log("message->", data);
     handlers.message(data, socket, io);

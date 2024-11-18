@@ -1,5 +1,5 @@
 import { Card, CardBody, Avatar } from "@nextui-org/react";
-import { useEffect } from "react";
+import Markdown from "react-markdown";
 
 
 import socket from "../socket";
@@ -9,18 +9,6 @@ import { getDisplayName } from "../utils";
 
 
 export default function SystemMessage({ message, room }) {
-
-    useEffect(() => {
-        socket.on("room:role:success", handleRoleSuccess);
-        return () => {
-            socket.off("room:role:success", handleRoleSuccess);
-        };
-    }, []);
-
-
-    function handleRoleSuccess() {
-        setIsSelected(true);
-    }
 
     return (
         <Card className="self-start">
@@ -37,7 +25,7 @@ export default function SystemMessage({ message, room }) {
                         <span className="text-gray-500">{new Date(message.time).toLocaleTimeString()}</span>
                     </p>
                     <div className="text-sm">
-                        <p className={`whitespace-pre-line ${message.extra?.roles ? 'font-bold text-amber-500' : ''}`}>{message.content}</p>
+                        <Markdown className={`message ${message.extra?.roles ? 'font-bold text-amber-500' : ''}`}>{message.content}</Markdown>
                         {message.extra?.roles && <ExtraRoleContent extra={message.extra} room={room} />}
                     </div>
                 </div>

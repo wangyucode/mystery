@@ -1,0 +1,17 @@
+.message ul>li {
+    list-style: disc;
+}
+
+.message ul,
+ol {
+    margin-left: 2em;
+}
+
+.message ol>li {
+    list-style: decimal;
+}
+
+.message h1,
+h2 {
+    font-weight: bold;
+}
