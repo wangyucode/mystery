@@ -1,4 +1,6 @@
 import { storiesWithOutDetail, getStory } from "./stories.js";
+import fs from "fs/promises";
+
 import * as host from "./host.js";
 
 const MAX_ROOMS = 1000;
@@ -391,7 +393,16 @@ export function message(data, socket, io) {
         io.to(data.roomId).emit('room:message', message);
     } else if (data.at === "host") {
         socket.emit('room:message', message);
-        if (room.round > room.story.rounds.length) {
+        if (room.round === -1) {
+            const errorMessage = {
+                from: "host",
+                to: "all",
+                content: '我下班啦',
+                time: new Date().getTime()
+            }
+            io.to(data.roomId).emit('room:message', errorMessage);
+            return;
+        } else if (room.round > room.story.rounds.length) {
             host.getSummarizeFromAi(room, message, io);
         } else {
             host.getReplyFromAi(room, message, io);
@@ -404,4 +415,22 @@ export function message(data, socket, io) {
         socket.emit('room:message', message);
     }
     room.messages.push(message);
+}
+
+export async function rating(data) {
+    const room = rooms[data.roomId];
+    if (!room) {
+        return;
+    }
+    // find message with extra.comment = true
+    const commentMessage = room.messages.find(m => m.extra?.comment);
+    if (commentMessage) {
+        commentMessage.extra.submitted = true;
+    }
+    // read rating from file
+    const ratings = JSON.parse(await fs.readFile('server/ratings.json', 'utf8'));
+    const storyRating = ratings[room.story.title];
+    storyRating.rating += data.rating;
+    storyRating.count += 1;
+    await fs.writeFile('server/ratings.json', JSON.stringify(ratings));
 }

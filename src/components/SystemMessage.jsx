@@ -6,7 +6,7 @@ import socket from "../socket";
 import ExtraRoleContent from "./ExtraRoleContent";
 import HostIcon from "/src/assets/host.png";
 import { getDisplayName } from "../utils";
-
+import CommentContent from "./CommentContent";
 
 export default function SystemMessage({ message, room }) {
 
@@ -27,6 +27,7 @@ export default function SystemMessage({ message, room }) {
                     <div className="text-sm">
                         <Markdown className={`message ${message.extra?.roles ? 'font-bold text-amber-500' : ''}`}>{message.content}</Markdown>
                         {message.extra?.roles && <ExtraRoleContent extra={message.extra} room={room} />}
+                        {message.extra?.comment && <CommentContent submitted={message.extra.submitted} roomId={room.id} />}
                     </div>
                 </div>
             </CardBody>

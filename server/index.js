@@ -55,6 +55,10 @@ io.on("connection", (socket) => {
     console.log("story:list->");
     handlers.stroyList(socket);
   });
+  socket.on("rating", (data) => {
+    console.log("rating->", data);
+    handlers.rating(data, socket, io);
+  });
 });
 
 io.listen(3001);
