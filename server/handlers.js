@@ -432,5 +432,6 @@ export async function rating(data) {
     const storyRating = ratings[room.story.title];
     storyRating.rating += data.rating;
     storyRating.count += 1;
+    storyRating.tokens += room.tokens;
     await fs.writeFile('server/ratings.json', JSON.stringify(ratings));
 }
