@@ -11,7 +11,7 @@ const openai = new OpenAI({
     baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
 });
 
-const model = "qwen-turbo";
+const model = "qwen-plus";
 
 export async function getReplyFromAi(room, message, io) {
     const loadingMessage = { from: "host", to: message.from, content: "", extra: { done: false, ai: true } };
@@ -22,10 +22,10 @@ export async function getReplyFromAi(room, message, io) {
     for (let i = room.messages.length - 1; i >= 0; i--) {
         const msg = room.messages[i];
         if (msg.from === "host" && (msg.to === message.from || msg.to === "all")) {
-            lastHostMessageContent = msg.content;
+            lastHostMessageContent = msg.content.replaceAll("\n", " ");
             lastHostMessageTo = msg.to === "all" ? "所有人" : room.players.find(p => p.id === msg.to)?.role || msg.to.slice(0, 4);
             if (msg?.extra?.roles?.length) {
-                lastHostMessageContent += `\n角色列表：\n${msg.extra.roles.map(r => `- ${r.name}: ${r.desc}`).join('\n')}`;
+                lastHostMessageContent += ` 角色列表：${msg.extra.roles.map(r => `${r.name}: ${r.desc}`).join(';')}`;
             }
             break;
         }
@@ -45,6 +45,7 @@ export async function getReplyFromAi(room, message, io) {
         const res = await openai.chat.completions.create({
             model,
             messages: prompts,
+            temperature: 0.1,
         });
         const content = res.choices[0].message.content;
         console.log("ai response->", content);
@@ -83,6 +84,7 @@ export async function getSummarizeFromAi(room, message, io) {
         const res = await openai.chat.completions.create({
             model,
             messages: prompts,
+            temperature: 0.1,
         });
         const content = res.choices[0].message.content;
         console.log("ai response->", content);

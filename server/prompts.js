@@ -22,14 +22,14 @@ export function summarizePrompt(room, message) {
     for (let choice of room.choices) {
         choices += `${choice.role} 在第${choice.round}轮选择了线索${choice.key};`;
     }
-    return `请根据主持人和玩家的消息，玩家结论的评价。以json的{开头，不要包含其它非json内容。
+    return `请根据主持人和玩家的消息，玩家结论的评价。
     游戏规则：${room.story.rules}
     背景故事：${room.story.background}
     剧情：${JSON.stringify(room.story.rounds)}
     玩家选择线索：${choices}
     真相：${room.truth}
     玩家结论：${message.content}
-    如果玩家给出了有效结论，无论玩家的结论对错，请你结合玩家的选择和真相，给出评价和真相。示例:{"result": "评价", "truth": "真相"}
+    如果玩家给出了有效结论，无论玩家的结论对错，请你结合玩家的选择和真相，给出评价和详细的真相。示例:{"result": "评价", "truth": "真相"}
     如果玩家没有给出有效结论，鼓励玩家继续分析和回答。示例:{"question": "鼓励"}
     `;
 }
