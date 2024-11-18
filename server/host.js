@@ -49,9 +49,10 @@ export async function getReplyFromAi(room, message, io) {
         const content = res.choices[0].message.content;
         console.log("ai response->", content);
         jsonReply = JSON.parse(content);
+        room.tokens += res.usage.total_tokens;
     } catch (e) {
         console.error(e);
-        const replyMessage = { from: "host", to: message.from, content: "AI 似乎抽风了，请稍后再试", time: new Date().getTime(), extra: { done: true, ai: true } };
+        const replyMessage = { from: "host", to: message.from, content: "你把AI整懵了，请换个方式回答", time: new Date().getTime(), extra: { done: true, ai: true } };
         io.to(message.from).emit('room:message', replyMessage);
         return;
     }
@@ -68,119 +69,36 @@ export async function getReplyFromAi(room, message, io) {
 }
 
 
-export async function start(room, io) {
-    const systemPrompt = await prompts.systemPrompt(room.title);
-    let messages = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompts.startPrompt() }
+export async function getSummarizeFromAi(room, message, io) {
+    const loadingMessage = { from: "host", to: "all", content: "", extra: { done: false, ai: true } };
+    io.to(room.id).emit('room:message', loadingMessage);
+    const userPrompt = promptsUtil.summarizePrompt(room, message);
+    const prompts = [
+        { role: "system", content: promptsUtil.systemPrompt },
+        { role: "user", content: userPrompt }
     ];
-    room.messages = messages;
+    console.log("ai request->", userPrompt);
+    let jsonReply = null;
     try {
-        const loadingMessage = { from: "主持人", to: "所有人", content: "正在输入...", extra: { done: false, ai: true } };
-        io.to(room.id).emit('room:message', loadingMessage);
-
-        console.log("ai request->", JSON.stringify(messages.at(-1)));
-        let res = await openai.chat.completions.create({
-            model,
-            messages,
-            temperature: 0.1
-        });
-        console.log("ai response->", JSON.stringify(res));
-        let content = res.choices[0].message.content;
-        room.tokens += res.usage.total_tokens;
-        let message = { from: "主持人", to: "所有人", content, extra: { done: true, ai: true } };
-        io.to(room.id).emit('room:message', message);
-        messages.push({ role: "assistant", content });
-
-        room.round++;
-        round(room, io);
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-
-export async function round(room, io) {
-    for (const player of room.players) {
-        const loadingMessage = { from: "主持人", to: player.role, content: "正在输入...", extra: { done: false, ai: true } };
-        io.to(player.id).emit('room:message', loadingMessage);
-        room.messages.push({ role: "user", content: prompts.roundPrompt(room.round, player.role) });
-        console.log("ai request->", JSON.stringify(room.messages.at(-1)));
         const res = await openai.chat.completions.create({
             model,
-            messages: room.messages,
-            temperature: 0.1
+            messages: prompts,
         });
         const content = res.choices[0].message.content;
+        console.log("ai response->", content);
+        jsonReply = JSON.parse(content);
         room.tokens += res.usage.total_tokens;
-        const message = { from: "主持人", to: player.role, content, extra: { done: true, ai: true } };
-        io.to(player.id).emit('room:message', message);
-        room.messages.push({ role: "assistant", content });
-    }
-}
-
-export async function next(room, data, io) {
-    room.messages.push({ role: "user", content: prompts.nextPrompt(room.round, data.from, data.content) });
-    const player = room.players.find(p => p.role === data.from);
-    if (!player) {
+    } catch (e) {
+        console.error(e);
+        const replyMessage = { from: "host", to: "all", content: "你把AI整懵了，请换个方式回答", time: new Date().getTime(), extra: { done: true, ai: true } };
+        io.to(room.id).emit('room:message', replyMessage);
         return;
     }
-    try {
-        const loadingMessage = { from: "主持人", to: data.from, content: "正在输入...", extra: { done: false, ai: true } };
-        io.to(player.id).emit('room:message', loadingMessage);
-        console.log("ai request->", JSON.stringify(room.messages.at(-1)));
-        const res = await openai.chat.completions.create({
-            model,
-            messages: room.messages,
-            temperature: 0.1
-        });
-        let content = res.choices[0].message.content;
-        room.tokens += res.usage.total_tokens;
-        const message = { from: "主持人", to: data.from, content, extra: { done: true, ai: true } };
-        io.to(player.id).emit('room:message', message);
-        room.messages.push({ role: "assistant", content });
-
-        if (content.includes("<next>")) {
-            room.round++;
-            round(room, io);
-        } else if (content.includes("<end>")) {
-            room.round = -1;
-        }
-    } catch (error) {
-        console.error(error);
+    if (jsonReply?.result) {
+        io.to(room.id).emit('room:message', { from: "host", to: "all", content: `${jsonReply.result}\n## 真相：\n${jsonReply.truth}`, time: new Date().getTime(), extra: { done: true, ai: true } });
+        handlers.end(room, io);
+    } else if (jsonReply?.question) {
+        io.to(room.id).emit('room:message', { from: "host", to: "all", content: jsonReply.question, time: new Date().getTime(), extra: { done: true, ai: true } });
     }
 }
-
-
-export async function end(room, data, io) {
-    room.messages.push({ role: "user", content: prompts.endPrompt(data.from, data.content) });
-    const player = room.players.find(p => p.role === data.from);
-    if (!player) {
-        return;
-    }
-    try {
-        const loadingMessage = { from: "主持人", to: data.from, content: "正在输入...", extra: { done: false, ai: true } };
-        io.to(player.id).emit('room:message', loadingMessage);
-        console.log("ai request->", JSON.stringify(room.messages.at(-1)));
-        const res = await openai.chat.completions.create({
-            model,
-            messages: room.messages,
-            temperature: 0.1
-        });
-        let content = res.choices[0].message.content;
-        room.tokens += res.usage.total_tokens;
-        const message = { from: "主持人", to: data.from, content, extra: { done: true, ai: true } };
-        io.to(player.id).emit('room:message', message);
-        room.messages.push({ role: "assistant", content });
-
-        if (content.includes("<finish>")) {
-            room.round = -2;
-            io.to(room.id).emit('room:message', { from: "系统", to: "所有人", content: "游戏结束，主持人已离开，你可以退出或与其他人继续讨论", extra: { exit: true } });
-            console.log("game end->", JSON.stringify({ ...room, messages: null }), new Date().toLocaleString());
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
-
 

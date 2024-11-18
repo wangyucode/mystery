@@ -128,7 +128,7 @@ export default function Room() {
         <h1 className="text-lg font-bold">{room.title}</h1>
 
       </div>
-      <div className="flex gap-2 justify-between items-center">
+      <div className="flex gap-2 justify-between items-center border-b pb-2">
         <Chip color="primary">房间号：{room.id}</Chip>
         <Chip color="secondary">人数：{room.players.length}/{room.people}</Chip>
         <div className="flex-1"></div>

@@ -29,7 +29,8 @@ export function create(title, socket, io) {
         story,
         round: 0,
         messages: [],
-        tokens: 0
+        tokens: 0,
+        choices: []
     };
     rooms[id] = backendRoom;
     socket.join(id);
@@ -277,15 +278,39 @@ export function clue(room, message, key, io) {
     const player = room.players.find(p => p.id === message.from);
     if (!player) {
         console.error("wtf: player not found when select clue->", message);
+        const errorMessage = {
+            from: "host",
+            to: message.from,
+            content: '你不在房间中',
+            time: new Date().getTime(),
+            extra: { done: true, ai: true }
+        }
+        io.to(message.from).emit('room:message', errorMessage);
         return;
     }
     if (!player.role) {
         console.error("wtf: player not selected role when select clue->", message);
+        const errorMessage = {
+            from: "host",
+            to: message.from,
+            content: '你还没有选择角色',
+            time: new Date().getTime(),
+            extra: { done: true, ai: true }
+        }
+        io.to(message.from).emit('room:message', errorMessage);
         return;
     }
     const story = room.story.rounds[room.round - 1][player.role];
     if (!story.clues[key]) {
         console.error("wtf: clue not found when select clue->", message);
+        const errorMessage = {
+            from: "host",
+            to: message.from,
+            content: '线索不存在',
+            time: new Date().getTime(),
+            extra: { done: true, ai: true }
+        }
+        io.to(message.from).emit('room:message', errorMessage);
         return;
     }
     const clue = story.clues[key];
@@ -297,8 +322,10 @@ export function clue(room, message, key, io) {
         time: new Date().getTime(),
         extra: { done: true, ai: true }
     }
+
     io.to(message.from).emit('room:message', clueMessage);
     room.messages.push(clueMessage);
+    room.choices.push({ role: player.role, key, round: room.round });
 
     nextRound(room, io);
 }
@@ -321,7 +348,7 @@ function nextRound(room, io) {
         for (const key in story.clues) {
             clues += `- ${key}: ${story.clues[key].title}\n`;
         }
-        const content = `# 第${room.round}轮\n## ${player.role}的剧情:\n${story.story}\n## 线索选项：\n${clues}\n请选择你的行动`;
+        const content = `# 第${room.round}轮\n## ${player.role}的剧情:\n${story.story}\n## 线索选项：\n${clues}\n请选择你要查看的线索`;
         const message = {
             from: "host",
             to: player.id,
@@ -331,6 +358,20 @@ function nextRound(room, io) {
         io.to(player.id).emit('room:message', message);
         room.messages.push(message);
     }
+}
+
+export function end(room, io) {
+    room.round = -1;
+    console.log("game end->", room.id, room.story.title, room.tokens, new Date().toLocaleString());
+    const endMessage = {
+        from: "host",
+        to: "all",
+        content: "游戏结束",
+        time: new Date().getTime(),
+        extra: { comment: true }
+    }
+    io.to(room.id).emit('room:message', endMessage);
+    room.messages.push(endMessage);
 }
 
 export function message(data, socket, io) {
@@ -350,7 +391,11 @@ export function message(data, socket, io) {
         io.to(data.roomId).emit('room:message', message);
     } else if (data.at === "host") {
         socket.emit('room:message', message);
-        host.getReplyFromAi(room, message, io);
+        if (room.round > room.story.rounds.length) {
+            host.getSummarizeFromAi(room, message, io);
+        } else {
+            host.getReplyFromAi(room, message, io);
+        }
     } else {
         const toPlayer = room.players.find(p => p.role === data.at || p.id === data.at);
         if (toPlayer) {
