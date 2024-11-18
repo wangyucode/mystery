@@ -1,4 +1,5 @@
 import { storiesWithOutDetail, getStory } from "./stories.js";
+import * as host from "./host.js";
 
 const MAX_ROOMS = 1000;
 
@@ -43,7 +44,7 @@ export function create(title, socket, io) {
     io.to(id).emit('room:update', frontendRoom);
 
     const message = {
-        from: "主持人",
+        from: "host",
         to: "all",
         content: `欢迎来到《${story.title}》，你可以邀请其他玩家使用 ${id} 加入房间`,
         time: new Date().getTime()
@@ -51,12 +52,13 @@ export function create(title, socket, io) {
     backendRoom.messages.push(message);
     io.to(id).emit('room:message', message);
     const roleMessage = {
-        from: "主持人",
+        from: "host",
         to: socket.id,
         content: "请选择你的角色",
         time: new Date().getTime(),
         extra: {
             roles: story.roles,
+            rules: story.rules,
             background: story.background
         }
     }
@@ -87,7 +89,7 @@ export async function join(id, socket, io) {
     };
     io.to(id).emit('room:update', frontendRoom);
     const message = {
-        from: "主持人",
+        from: "host",
         to: "all",
         content: '有人加入了房间',
         time: new Date().getTime()
@@ -104,7 +106,7 @@ export async function join(id, socket, io) {
 
     const story = room.story;
     const roleMessage = {
-        from: "主持人",
+        from: "host",
         to: socket.id,
         content: "请选择你的角色",
         time: new Date().getTime(),
@@ -128,7 +130,7 @@ export function leave(id, socket, io) {
     room.players = room.players.filter(p => p.id !== socket.id);
 
     const message = {
-        from: "主持人",
+        from: "host",
         to: "all",
         content: '有人离开了房间',
         time: new Date().getTime()
@@ -182,7 +184,7 @@ export function rejoin(data, socket, io) {
 
     const replaceContent = player.role ? `${player.role} 已重连` : `${data.socketId.slice(0, 4)} 已重连为 ${socket.id.slice(0, 4)}`;
     const message = {
-        from: "主持人",
+        from: "host",
         to: "all",
         content: replaceContent,
         time: new Date().getTime(),
@@ -243,7 +245,7 @@ export function role(data, socket, io) {
     };
     io.to(data.roomId).emit('room:update', frontendRoom);
     const message = {
-        from: "主持人",
+        from: "host",
         to: "all",
         content: `${data.role} 已被选择`,
         time: new Date().getTime()
@@ -252,7 +254,7 @@ export function role(data, socket, io) {
     socket.emit('room:role:success');
     if (room.players.every(p => p.role)) {
         const message = {
-            from: "主持人",
+            from: "host",
             to: "all",
             content: "所有角色已选择完毕，正在邀请AI主持人加入...",
             time: new Date().getTime()
@@ -275,15 +277,12 @@ export function message(data, socket, io) {
         content: data.content,
         time: new Date().getTime()
     }
+
     if (data.at === "all") {
         io.to(data.roomId).emit('room:message', message);
-    } else if (data.at === "主持人") {
-        // if (room.round > 0) {
-        //     host.next(room, message, io);
-        // } else if (room.round === -1) {
-        //     host.end(room, message, io);
-        // }
+    } else if (data.at === "host") {
         socket.emit('room:message', message);
+        host.getReplyFromAi(room, message, io);
     } else {
         const toPlayer = room.players.find(p => p.role === data.at || p.id === data.at);
         if (toPlayer) {

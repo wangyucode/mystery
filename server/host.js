@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import * as prompts from "./prompts.js";
+import * as promptsUtil from "./prompts.js";
 
 import dotenv from "dotenv";
 
@@ -11,6 +11,62 @@ const openai = new OpenAI({
 });
 
 const model = "qwen-turbo";
+
+export async function getReplyFromAi(room, message, io) {
+    const loadingMessage = { from: "host", to: message.from, content: "", extra: { done: false, ai: true } };
+    io.to(message.from).emit('room:message', loadingMessage);
+    let lastHostMessageContent = ""
+    let lastHostMessageTo = ""
+    // find the last message from host to message.from or to all
+    for (let i = room.messages.length - 1; i >= 0; i--) {
+        const msg = room.messages[i];
+        if (msg.from === "host" && (msg.to === message.from || msg.to === "all")) {
+            lastHostMessageContent = msg.content;
+            lastHostMessageTo = msg.to;
+            if (msg?.extra?.roles?.length) {
+                lastHostMessageContent += "\n角色列表：" + msg.extra.roles.map(r => r.name).join(",");
+            }
+            break;
+        }
+    }
+
+    const userPrompt = promptsUtil.userPrompt(lastHostMessageTo, lastHostMessageContent, message.content);
+    const prompts = [
+        { role: "system", content: promptsUtil.systemPrompt },
+        { role: "user", content: userPrompt }
+    ];
+
+    console.log("ai request->", userPrompt);
+    let jsonReply = null;
+    try {
+        // await new Promise(resolve => setTimeout(resolve, 10000));
+        // throw new Error("test");
+        const res = await openai.chat.completions.create({
+            model,
+            messages: prompts,
+        });
+        const content = res.choices[0].message.content;
+        console.log("ai response->", content);
+        jsonReply = JSON.parse(content);
+    } catch (e) {
+        console.error(e);
+        const replyMessage = { from: "host", to: message.from, content: "AI 似乎抽风了，请稍后再试", time: new Date().getTime(), extra: { done: true, ai: true } };
+        io.to(message.from).emit('room:message', replyMessage);
+        return;
+    }
+    if (jsonReply?.question) {
+        const replyMessage = { from: "host", to: message.from, content: jsonReply.question, time: new Date().getTime(), extra: { done: true, ai: true } };
+        io.to(message.from).emit('room:message', replyMessage);
+    } else if (jsonReply?.role) {
+        const player = room.players.find(p => p.id === message.from);
+        if (player) {
+            player.role = jsonReply.role;
+            const replyMessage = { from: "host", to: "all", content: `${player.id.slice(0, 4)} 选择扮演角色：${player.role}`, time: new Date().getTime(), extra: { done: true, ai: true } };
+            io.to(room.id).emit('room:message', replyMessage);
+
+        }
+    }
+}
 
 
 export async function start(room, io) {

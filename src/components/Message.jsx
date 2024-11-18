@@ -4,9 +4,9 @@ import TypingMessage from "./TypingMessage";
 
 export default function Message({ message, room }) {
     if (message.extra?.ai && !message.extra?.done) {
-        return <TypingMessage />;
+        return <TypingMessage from={message.from} />;
     }
-    return message.from === "主持人"
+    return message.from === "host"
         ? <SystemMessage message={message} room={room} />
         : <PlayerMessage message={message} room={room} />;
 }

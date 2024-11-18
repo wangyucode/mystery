@@ -5,6 +5,9 @@ export default function ExtraRoleContent({ extra, room }) {
     return (
         <div className="flex flex-col gap-2 items-start">
             <p className="text-sm whitespace-pre-line">
+                <b>游戏规则：</b>{extra.rules}
+            </p>
+            <p className="text-sm whitespace-pre-line">
                 <b>背景故事：</b>{extra.background}
             </p>
             <div className="flex flex-col gap-2 items-start">

@@ -6,7 +6,9 @@ import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
 import Message from "./components/Message";
-export default function Home() {
+import { getDisplayName } from "./utils";
+
+export default function Room() {
 
   const navigate = useNavigate();
   const [room, setRoom] = useState({ players: [], people: 0 });
@@ -39,10 +41,8 @@ export default function Home() {
 
   function handleMessage(message) {
     console.log("room:message->", message);
-    if (message.extra?.ai && !message.extra?.done) {
-      setAiTyping(message.from);
-    } else {
-      setAiTyping("");
+    if (message.extra?.ai) {
+      message.extra.done ? setAiTyping("") : setAiTyping(getDisplayName(message.from));
     }
 
     let needUpdatePlayerId = false;
@@ -107,7 +107,7 @@ export default function Home() {
   function sendMessage() {
     if (!message) return;
     if (aiTyping) {
-      toast.warning(`${aiTyping} 正在说话，请安静`);
+      toast.warning(`${aiTyping} 正在说话，请保持安静`);
       return;
     }
     socket.emit("room:message", { roomId: room.id, content: message, at });

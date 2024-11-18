@@ -8,8 +8,8 @@ export default function TypingMessage({ from }) {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setDots(prev => prev.length >= 3 ? "." : prev + ".");
-        }, 500);
+            setDots(prev => prev.length >= 6 ? "." : prev + ".");
+        }, 300);
 
         return () => clearInterval(interval);
     }, []);
@@ -22,7 +22,7 @@ export default function TypingMessage({ from }) {
                     src={hostIcon}
                 />
                 <div className="flex flex-col">
-                    <b className="text-xs">{from}</b>
+                    <b className="text-xs">主持人</b>
                     <p className="text-sm">
                         <span>正在输入{dots}</span>
                     </p>
