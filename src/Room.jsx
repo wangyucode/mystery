@@ -6,16 +6,15 @@ import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
 import Message from "./components/Message";
-import { getDisplayName } from "./utils";
 export default function Home() {
 
   const navigate = useNavigate();
   const [room, setRoom] = useState({ players: [], people: 0 });
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
-  const [at, setAt] = useState("所有人");
+  const [at, setAt] = useState("all");
+  const [atRole, setAtRole] = useState("所有人");
   const [aiTyping, setAiTyping] = useState("");
-  const [isHostJoined, setIsHostJoined] = useState(false);
   const [isAtListOpen, setIsAtListOpen] = useState(false);
   const messageListRef = useRef(null);
 
@@ -46,10 +45,25 @@ export default function Home() {
       setAiTyping("");
     }
 
+    let needUpdatePlayerId = false;
+    if (message.extra?.oldId) {
+      needUpdatePlayerId = true;
+    }
+
     setMessages(prvMessages => {
+      if (needUpdatePlayerId) {
+        prvMessages.forEach(m => {
+          if (m.from === message.extra.oldId) {
+            m.from = message.extra.newId;
+          }
+          if (m.to === message.extra.oldId) {
+            m.to = message.extra.newId;
+          }
+        });
+      }
+
       const lastMessage = prvMessages[prvMessages.length - 1];
       if (lastMessage?.extra?.ai && !lastMessage?.extra?.done) {
-        setIsHostJoined(true);
         return [...prvMessages.slice(0, -1), message];
       } else {
         return [...prvMessages, message];
@@ -81,7 +95,8 @@ export default function Home() {
 
 
   function onClickAtItem(e) {
-    setAt(e.target.innerText);
+    setAt(e.target.dataset.at);
+    setAtRole(e.target.dataset.role);
     setIsAtListOpen(false);
   }
 
@@ -135,13 +150,13 @@ export default function Home() {
       <div className="flex">
         <Popover isOpen={isAtListOpen} onOpenChange={setIsAtListOpen}>
           <PopoverTrigger>
-            <Button className="rounded-r-none" color="secondary" variant="bordered">@{at}</Button>
+            <Button className="rounded-r-none" color="secondary" variant="bordered">@{atRole}</Button>
           </PopoverTrigger>
           <PopoverContent className="flex flex-col">
-            <Button size="sm" className="bg-white hover:bg-gray-200" onClick={onClickAtItem}>所有人</Button>
-            <Button size="sm" className={`bg-white hover:bg-gray-200 ${!isHostJoined ? "text-gray-500" : ""}`} onClick={onClickAtItem} disabled={!isHostJoined}>主持人</Button>
+            <Button size="sm" className="bg-white hover:bg-gray-200" onClick={onClickAtItem} data-at="all" data-role="所有人">所有人</Button>
+            <Button size="sm" className="bg-white hover:bg-gray-200" onClick={onClickAtItem} data-at="host" data-role="主持人">主持人</Button>
             {room.players.filter(player => player.id !== socket.id).map(player => (
-              <Button size="sm" className="bg-white hover:bg-gray-200" key={player.id} onClick={onClickAtItem}>{player.role || player.id.slice(0, 4)}</Button>
+              <Button size="sm" className="bg-white hover:bg-gray-200" key={player.id} onClick={onClickAtItem} data-at={player.id} data-role={player.role || player.id.slice(0, 4)}>{player.role || player.id.slice(0, 4)}</Button>
             ))}
           </PopoverContent>
         </Popover>

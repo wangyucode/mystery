@@ -7,7 +7,7 @@ export default function ExtraRoleContent({ extra, room }) {
             <p className="text-sm whitespace-pre-line">
                 <b>背景故事：</b>{extra.background}
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 items-start">
                 <b>角色列表：</b>
                 {extra.roles.map(r => (
                     <User

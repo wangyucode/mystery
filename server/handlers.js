@@ -44,15 +44,17 @@ export function create(title, socket, io) {
 
     const message = {
         from: "主持人",
-        to: socket.id,
-        content: `欢迎来到《${story.title}》，你可以邀请其他玩家使用 ${id} 加入房间`
+        to: "all",
+        content: `欢迎来到《${story.title}》，你可以邀请其他玩家使用 ${id} 加入房间`,
+        time: new Date().getTime()
     }
     backendRoom.messages.push(message);
-    socket.emit('room:message', message);
+    io.to(id).emit('room:message', message);
     const roleMessage = {
         from: "主持人",
         to: socket.id,
         content: "请选择你的角色",
+        time: new Date().getTime(),
         extra: {
             roles: story.roles,
             background: story.background
@@ -87,20 +89,33 @@ export async function join(id, socket, io) {
     const message = {
         from: "主持人",
         to: "all",
-        content: '有人加入了房间'
+        content: '有人加入了房间',
+        time: new Date().getTime()
     }
     io.to(id).emit('room:message', message);
-    const story = stories.find(s => s.title === room.title);
+
+    if (room.messages?.length) {
+        for (const message of room.messages) {
+            if (message.to === socket.id || message.to === "all") {
+                socket.emit('room:message', message);
+            }
+        }
+    }
+
+    const story = room.story;
     const roleMessage = {
         from: "主持人",
         to: socket.id,
         content: "请选择你的角色",
+        time: new Date().getTime(),
         extra: {
             roles: story.roles,
             background: story.background
         }
     }
     socket.emit('room:message', roleMessage);
+    room.messages.push(roleMessage);
+
     console.log("join", socket.rooms);
 }
 
@@ -115,7 +130,8 @@ export function leave(id, socket, io) {
     const message = {
         from: "主持人",
         to: "all",
-        content: '有人离开了房间'
+        content: '有人离开了房间',
+        time: new Date().getTime()
     }
     io.to(id).emit('room:message', message);
 
@@ -164,17 +180,34 @@ export function rejoin(data, socket, io) {
     };
     io.to(data.roomId).emit('room:update', frontendRoom);
 
+    const replaceContent = player.role ? `${player.role} 已重连` : `${data.socketId.slice(0, 4)} 已重连为 ${socket.id.slice(0, 4)}`;
     const message = {
         from: "主持人",
-        to: socket.id,
-        content: '重连成功'
+        to: "all",
+        content: replaceContent,
+        time: new Date().getTime(),
+        extra: {
+            oldId: data.socketId,
+            newId: socket.id
+        }
     }
-    socket.emit('room:message', message);
+    io.to(data.roomId).emit('room:message', message);
 
     if (room.messages?.length) {
         for (const message of room.messages) {
-            if (message.to === "all" || message.to === data.socketId) {
+            let needEmit = false;
+            if (message.from === data.socketId) {
+                message.from = socket.id;
+                needEmit = true;
+            }
+            if (message.to === data.socketId) {
                 message.to = socket.id;
+                needEmit = true;
+            }
+            if (message.to === "all") {
+                needEmit = true;
+            }
+            if (needEmit) {
                 socket.emit('room:message', message);
             }
         }
@@ -212,7 +245,8 @@ export function role(data, socket, io) {
     const message = {
         from: "主持人",
         to: "all",
-        content: `${data.role} 已被选择`
+        content: `${data.role} 已被选择`,
+        time: new Date().getTime()
     }
     io.to(data.roomId).emit('room:message', message);
     socket.emit('room:role:success');
@@ -220,7 +254,8 @@ export function role(data, socket, io) {
         const message = {
             from: "主持人",
             to: "all",
-            content: "所有角色已选择完毕，正在邀请AI主持人加入..."
+            content: "所有角色已选择完毕，正在邀请AI主持人加入...",
+            time: new Date().getTime()
         }
         io.to(data.roomId).emit('room:message', message);
         host.start(room, io);
@@ -234,14 +269,11 @@ export function message(data, socket, io) {
     if (!room) {
         return;
     }
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player) {
-        return;
-    }
     const message = {
-        from: player.role || socket.id.slice(0, 4),
+        from: socket.id,
         to: data.at,
-        content: data.content
+        content: data.content,
+        time: new Date().getTime()
     }
     if (data.at === "all") {
         io.to(data.roomId).emit('room:message', message);
@@ -253,10 +285,11 @@ export function message(data, socket, io) {
         // }
         socket.emit('room:message', message);
     } else {
-        const player = room.players.find(p => p.role === data.at || p.id === data.at);
-        if (player) {
-            io.to(player.id).emit('room:message', message);
+        const toPlayer = room.players.find(p => p.role === data.at || p.id === data.at);
+        if (toPlayer) {
+            io.to(toPlayer.id).emit('room:message', message);
         }
         socket.emit('room:message', message);
     }
+    room.messages.push(message);
 }

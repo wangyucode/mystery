@@ -31,9 +31,13 @@ export default function SystemMessage({ message, room }) {
                     color="secondary"
                 />
                 <div className="flex flex-col flex-1">
-                    <b className="text-xs">{message.from}（AI）</b>
+                    <p className="text-xs">
+                        <b>{message.from}（AI）</b>
+                        <b className="text-sky-500">@{getDisplayName(room.players.find(p => p.id === message.to) || message.to, socket.id)}：</b>
+                        <span className="text-gray-500">{new Date(message.time).toLocaleTimeString()}</span>
+                    </p>
                     <div className="text-sm">
-                        <p className={`whitespace-pre-line ${message.extra ? 'font-bold text-amber-500' : ''}`}><span className="text-sky-500 font-normal">@{getDisplayName(message.to, room.players.find(p => p.id === message.to), socket.id)}：</span>{message.content}</p>
+                        <p className={`whitespace-pre-line ${message.extra ? 'font-bold text-amber-500' : ''}`}>{message.content}</p>
                         {message.extra?.roles && <ExtraRoleContent extra={message.extra} room={room} />}
                     </div>
                 </div>
