@@ -219,16 +219,30 @@ export function rejoin(data, socket, io) {
 export function role(room, message, role, io) {
     const player = room.players.find(p => p.id === message.from);
     if (!player) {
-        socket.emit('room:error', '你不在房间中');
+        console.error("wtf: player not found when selectrole->", message);
         return;
     }
     if (player.role) {
-        socket.emit('room:error', '你已经选择了角色');
+        const errorMessage = {
+            from: "host",
+            to: message.from,
+            content: '你已经选择了角色',
+            time: new Date().getTime(),
+            extra: { done: true, ai: true }
+        }
+        io.to(message.from).emit('room:message', errorMessage);
         return;
     }
     const playerSelected = room.players.find(p => p.role === role);
     if (playerSelected) {
-        socket.emit('room:error', `${role} 已被选择`);
+        const errorMessage = {
+            from: "host",
+            to: message.from,
+            content: `${role} 已被选择`,
+            time: new Date().getTime(),
+            extra: { done: true, ai: true }
+        }
+        io.to(message.from).emit('room:message', errorMessage);
         return;
     }
     player.role = role;
@@ -243,7 +257,8 @@ export function role(room, message, role, io) {
         from: "host",
         to: "all",
         content: `${player.id.slice(0, 4)} 选择扮演角色：${role}`,
-        time: new Date().getTime()
+        time: new Date().getTime(),
+        extra: { done: true, ai: true }
     }
     io.to(room.id).emit('room:message', roleMessage);
     if (room.players.every(p => p.role)) {
@@ -258,10 +273,55 @@ export function role(room, message, role, io) {
     }
 }
 
+export function clue(room, message, key, io) {
+    const player = room.players.find(p => p.id === message.from);
+    if (!player) {
+        console.error("wtf: player not found when select clue->", message);
+        return;
+    }
+    if (!player.role) {
+        console.error("wtf: player not selected role when select clue->", message);
+        return;
+    }
+    const story = room.story.rounds[room.round - 1][player.role];
+    if (!story.clues[key]) {
+        console.error("wtf: clue not found when select clue->", message);
+        return;
+    }
+    const clue = story.clues[key];
+    const content = `# 线索：${clue.title}\n${clue.content}`;
+    const clueMessage = {
+        from: "host",
+        to: message.from,
+        content,
+        time: new Date().getTime(),
+        extra: { done: true, ai: true }
+    }
+    io.to(message.from).emit('room:message', clueMessage);
+    room.messages.push(clueMessage);
+
+    nextRound(room, io);
+}
+
 function nextRound(room, io) {
     room.round++;
+    if (room.round > room.story.rounds.length) {
+        const endMessage = {
+            from: "host",
+            to: "all",
+            content: "所有轮次已结束，请说出你认为的真相",
+            time: new Date().getTime()
+        }
+        io.to(room.id).emit('room:message', endMessage);
+        return;
+    }
     for (const player of room.players) {
-        const content = `# 第${room.round}轮\n## ${player.role}的剧情:\n${room.story.rounds[room.round - 1][player.role].story}\n## 线索选项：\n${room.story.rounds[room.round - 1][player.role].clues.map(c => `- ${c.key}: ${c.title}`).join('\n')}\n请选择你的行动`;
+        const story = room.story.rounds[room.round - 1][player.role];
+        let clues = "";
+        for (const key in story.clues) {
+            clues += `- ${key}: ${story.clues[key].title}\n`;
+        }
+        const content = `# 第${room.round}轮\n## ${player.role}的剧情:\n${story.story}\n## 线索选项：\n${clues}\n请选择你的行动`;
         const message = {
             from: "host",
             to: player.id,

@@ -60,8 +60,10 @@ export async function getReplyFromAi(room, message, io) {
         io.to(message.from).emit('room:message', replyMessage);
     } else if (jsonReply?.role) {
         handlers.role(room, message, jsonReply.role, io);
-        // const replyMessage = { from: "host", to: "all", content: `${player.id.slice(0, 4)} 选择扮演角色：${player.role}`, time: new Date().getTime(), extra: { done: true, ai: true } };
-        // io.to(room.id).emit('room:message', replyMessage);
+    } else if (jsonReply?.key) {
+        handlers.clue(room, message, jsonReply.key, io);
+    } else {
+        console.error("wtf: invalid json reply->", jsonReply);
     }
 }
 

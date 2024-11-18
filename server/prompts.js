@@ -9,8 +9,8 @@ export const systemPrompt = '你是剧本杀的主持人的助手，可以识别
 
 export function userPrompt(lastHostMessageTo, lastHostMessageContent, message) {
     return `请解析支持人和玩家意图，给出json格式回复，
-    1.如果玩家选择角色，回答中包括role字段，示例{"role": "角色名称"}
-    2.如果玩家选择线索，给出线索key，示例{"key":"线索选项的key"}
+    1.如果玩家选择角色，角色必须为主持人提到的角色列表中的选项，回答中包括role字段，示例{"role": "角色名称"}
+    2.如果玩家选择线索，线索必须为主持人提到的线索列表中的选项，给出线索key，示例{"key":"线索选项的key"}
     3.如果玩家为给出有效回复，按照主持人的消息请求玩家重新回答{"question": "提醒"}
     以下是主持人和玩家的最后对话
     主持人 对 ${lastHostMessageTo} 说 ${lastHostMessageContent}
