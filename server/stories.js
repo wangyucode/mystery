@@ -1,13 +1,9 @@
 import fs from 'fs';
 
-
+import { db } from "./db.js";
 
 let stories;
 export let storiesWithOutDetail = [];
-
-export function getStoriesWithOutDetail() {
-    return storiesWithOutDetail;
-}
 
 export function getStory(title) {
     return stories.find(story => story.title === title);
@@ -24,4 +20,24 @@ export function readStroies() {
         });
         return story;
     });
+    initStoriesRating();
+}
+
+export async function initStoriesRating() {
+    for (let story of storiesWithOutDetail) {
+        let rating;
+        try {
+            rating = await db.get(story.title);
+        } catch (e) {
+            console.error("init rating", story.title, e);
+        }
+        if (!rating) {
+            await db.put(story.title, { rating: 500, user: 100, tokens: 0, count: 0 });
+            story.rating = 5;
+        } else {
+            story.rating = rating.rating / rating.user;
+            console.log("init rating", story.title, rating);
+        }
+    }
+    storiesWithOutDetail.sort((a, b) => b.rating - a.rating);
 }

@@ -6,7 +6,9 @@ import {
   Card,
   CardBody,
   CardFooter,
+  Chip
 } from "@nextui-org/react";
+import { Rating } from '@smastrom/react-rating'
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightEndOnRectangleIcon,
@@ -88,13 +90,13 @@ export default function Home() {
         {stories.map((story) => (
           <Card
             key={story.title}
-            className={`h-60 ${story.title === select ? "ring-4" : ""}`}
+            className={`h-64 ${story.title === select ? "ring-4" : ""}`}
             isPressable
             onClick={storyClick}
             data-title={story.title}
             data-people={story.people}
           >
-            <CardBody className="p-0">
+            <CardBody className="p-0 overflow-hidden">
               <Image
                 width={192}
                 height={192}
@@ -103,9 +105,15 @@ export default function Home() {
                 radius="none"
               ></Image>
             </CardBody>
-            <CardFooter className="text-sm flex justify-between">
-              <b>{story.title}</b>
-              <p>{story.people}人</p>
+            <CardFooter className="flex flex-col gap-1 items-start">
+              <div className="w-full flex justify-between items-center">
+                <b className="text-sm">{story.title}</b>
+                <Chip size="sm" color="primary" variant="flat">{story.people}人</Chip>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Rating value={story.rating} readOnly className="max-w-24" />
+                <p className="text-xs text-amber-500">{(story.rating * 2).toFixed(1)}</p>
+              </div>
             </CardFooter>
           </Card>
         ))}

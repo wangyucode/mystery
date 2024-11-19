@@ -1,7 +1,7 @@
-import { storiesWithOutDetail, getStory } from "./stories.js";
-import fs from "fs/promises";
+import { storiesWithOutDetail, getStory, initStoriesRating } from "./stories.js";
 
 import * as host from "./host.js";
+import { db } from "./db.js";
 
 const MAX_ROOMS = 1000;
 
@@ -362,7 +362,7 @@ function nextRound(room, io) {
     }
 }
 
-export function end(room, io) {
+export async function end(room, io) {
     room.round = -1;
     console.log("game end->", room.id, room.story.title, room.tokens, new Date().toLocaleString());
     const endMessage = {
@@ -374,6 +374,11 @@ export function end(room, io) {
     }
     io.to(room.id).emit('room:message', endMessage);
     room.messages.push(endMessage);
+
+    const storyRating = await db.get(room.story.title);
+    storyRating.tokens += room.tokens;
+    storyRating.count += 1;
+    await db.put(room.story.title, storyRating);
 }
 
 export function message(data, socket, io) {
@@ -425,13 +430,11 @@ export async function rating(data) {
     // find message with extra.comment = true
     const commentMessage = room.messages.find(m => m.extra?.comment);
     if (commentMessage) {
-        commentMessage.extra.submitted = true;
+        commentMessage.extra.submitted = data.rating;
     }
-    // read rating from file
-    const ratings = JSON.parse(await fs.readFile('server/ratings.json', 'utf8'));
-    const storyRating = ratings[room.story.title];
+    const storyRating = await db.get(room.story.title);
     storyRating.rating += data.rating;
-    storyRating.count += 1;
-    storyRating.tokens += room.tokens;
-    await fs.writeFile('server/ratings.json', JSON.stringify(ratings));
+    storyRating.user += 1;
+    await db.put(room.story.title, storyRating);
+    initStoriesRating();
 }
