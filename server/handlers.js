@@ -17,14 +17,27 @@ export function stroyList(socket) {
     socket.emit("story:list", storiesWithOutDetail);
 }
 
-export function create(title, socket, io) {
+export async function create(data, socket, io) {
     if (unusedIds.length === 0) {
         socket.emit('room:error', '房间数已到达上限！');
-        return;
+        return false;
     }
+    let remaining = null;
+    try {
+        remaining = await db.get(data.key);
+    } catch (e) {
+        console.error("key error->", data.key, e);
+    }
+    if (!remaining || remaining.count <= 0) {
+        socket.emit('room:error', '房卡剩余次数不足！，请联系管理员');
+        return false;
+    }
+
+    remaining.count--;
+    await db.put(data.key, remaining);
     const randomIndex = Math.floor(Math.random() * unusedIds.length);
     const id = unusedIds.splice(randomIndex, 1)[0];
-    const story = getStory(title);
+    const story = getStory(data.select);
     const backendRoom = {
         id,
         players: [{ id: socket.id }],
@@ -49,7 +62,7 @@ export function create(title, socket, io) {
     const message = {
         from: "host",
         to: "all",
-        content: `欢迎来到《${story.title}》，你可以邀请其他玩家使用 ${id} 加入房间`,
+        content: `欢迎来到《${story.title}》，你可以邀请其他玩家使用 ${id} 加入房间， 房卡剩余次数：${remaining.count}`,
         time: new Date().getTime()
     }
     backendRoom.messages.push(message);
@@ -68,6 +81,7 @@ export function create(title, socket, io) {
     backendRoom.messages.push(roleMessage);
     socket.emit('room:message', roleMessage);
     console.log("game created->", id, story.title, new Date().toLocaleString());
+    return true;
 }
 
 export async function join(id, socket, io) {

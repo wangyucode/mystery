@@ -26,11 +26,13 @@ io.on("connection", (socket) => {
     count.user--;
     io.emit("count", count);
   });
-  socket.on("room:create", (title) => {
-    console.log("create->", title);
-    handlers.create(title, socket, io);
-    count.room++;
-    io.emit("count", count);
+  socket.on("room:create", async (data) => {
+    console.log("create->", data);
+    const result = await handlers.create(data, socket, io);
+    if (result) {
+      count.room++;
+      io.emit("count", count);
+    }
   });
   socket.on("room:join", (id) => {
     console.log("join->", id);

@@ -23,10 +23,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [roomId, setRoomId] = useState("");
   const [stories, setStories] = useState([]);
+  const [key, setKey] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    socket.on("room:created", (id) => {
+    socket.on("room:created", id => {
       console.log("room:created->", id);
       localStorage.setItem("game", JSON.stringify({ roomId: id, socketId: socket.id }));
       navigate(`/room/${id}`, { replace: true });
@@ -65,8 +66,12 @@ export default function Home() {
       toast.error("请选择剧本");
       return;
     }
+    if (!key) {
+      toast.error("请输入房卡");
+      return;
+    }
     setLoading(true);
-    socket.emit("room:create", select);
+    socket.emit("room:create", { select, key });
   }
 
   function join() {
@@ -118,15 +123,24 @@ export default function Home() {
           </Card>
         ))}
       </div>
-      <Button
-        color="primary"
-        className="w-full"
-        onClick={create}
-        isLoading={loading}
-        endContent={<SquaresPlusIcon className="size-5" />}
-      >
-        创建
-      </Button>
+      <div className="flex gap-2">
+        <Input
+          placeholder="输入房卡（免费房卡888）"
+          className="flex-1"
+          type="number"
+          value={key}
+          onValueChange={setKey}
+        ></Input>
+        <Button
+          color="primary"
+          onClick={create}
+          isLoading={loading}
+          endContent={<SquaresPlusIcon className="size-5" />}
+        >
+          创建
+        </Button>
+      </div>
+
       <div className="flex gap-2">
         <Input
           placeholder="输入房间号"
