@@ -2,6 +2,7 @@ import { storiesWithOutDetail, getStory, initStoriesRating } from "./stories.js"
 
 import * as host from "./host.js";
 import { db } from "./db.js";
+import * as game from "./game/games.js";
 
 const MAX_ROOMS = 1000;
 
@@ -70,7 +71,7 @@ export async function create(data, socket, io) {
     const roleMessage = {
         from: "host",
         to: socket.id,
-        content: "请选择你的角色",
+        content: game.roleMessage(story.type),
         time: new Date().getTime(),
         extra: {
             roles: story.roles,
@@ -125,7 +126,7 @@ export async function join(id, socket, io) {
     const roleMessage = {
         from: "host",
         to: socket.id,
-        content: "请选择你的角色",
+        content: game.roleMessage(story.type),
         time: new Date().getTime(),
         extra: {
             roles: story.roles,
@@ -236,7 +237,7 @@ export function rejoin(data, socket, io) {
 export function role(room, message, role, io) {
     const player = room.players.find(p => p.id === message.from);
     if (!player) {
-        console.error("wtf: player not found when selectrole->", message);
+        console.error("wtf: player not found when select role->", message);
         return;
     }
     if (player.role) {
@@ -412,20 +413,7 @@ export function message(data, socket, io) {
         io.to(data.roomId).emit('room:message', message);
     } else if (data.at === "host") {
         socket.emit('room:message', message);
-        if (room.round === -1) {
-            const errorMessage = {
-                from: "host",
-                to: "all",
-                content: '我下班啦',
-                time: new Date().getTime()
-            }
-            io.to(data.roomId).emit('room:message', errorMessage);
-            return;
-        } else if (room.round > room.story.rounds.length) {
-            host.getSummarizeFromAi(room, message, io);
-        } else {
-            host.getReplyFromAi(room, message, io);
-        }
+        game.handleHostMessage(room, message, io);
     } else {
         const toPlayer = room.players.find(p => p.role === data.at || p.id === data.at);
         if (toPlayer) {
@@ -434,6 +422,20 @@ export function message(data, socket, io) {
         socket.emit('room:message', message);
     }
     room.messages.push(message);
+}
+
+export async function addAi(data, socket, io) {
+    const room = rooms[data.roomId];
+    if (!room) {
+        console.error("wtf: room not found when add ai->", data);
+        return false;
+    }
+    if (room.players.length >= room.story.people) {
+        socket.emit('room:error', '房间已满');
+        return false;
+    }
+
+
 }
 
 export async function rating(data) {

@@ -15,7 +15,7 @@ export default function ExtraRoleContent({ extra, room }) {
                 {extra.roles.map(r => (
                     <User
                         name={r.name}
-                        avatarProps={{ src: `/avatars/${room.title}/${r.name}.png` }}
+                        avatarProps={{ src: `/avatars/${room.title}/${r.name}.png`, className: "shrink-0" }}
                         key={r.name}
                         description={r.desc}
                     />

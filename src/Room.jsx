@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
-import { Button, Input, Chip, Image, Popover, PopoverTrigger, PopoverContent, ScrollShadow } from "@nextui-org/react";
+import { Button, Input, Chip, Image, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightStartOnRectangleIcon, PaperAirplaneIcon } from "@heroicons/react/16/solid";
+import { ArrowRightStartOnRectangleIcon, PaperAirplaneIcon, UserPlusIcon } from "@heroicons/react/16/solid";
 import { toast, Toaster } from "sonner";
 
 import socket from "./socket";
@@ -114,6 +114,10 @@ export default function Room() {
     setMessage("");
   }
 
+  function addAi() {
+    socket.emit("room:addAi", room.id);
+  }
+
   function onKeyDown(e) {
     if (e.key === "Enter") {
       sendMessage();
@@ -126,17 +130,17 @@ export default function Room() {
       <div className="flex items-center gap-2 justify-center">
         <Image src={`/cover/${room.title}.png`} alt={room.title} width={48} height={48} disableSkeleton />
         <h1 className="text-lg font-bold">{room.title}</h1>
-
+        <Toaster position="top-center" richColors />
       </div>
       <div className="flex gap-2 justify-between items-center border-b pb-2">
         <Chip color="primary">房间号：{room.id}</Chip>
         <Chip color="secondary">人数：{room.players.length}/{room.people}</Chip>
         <div className="flex-1"></div>
-        <Toaster position="top-center" richColors />
+        {room.players.length < room.people && <Button color="primary" size="sm" onPress={addAi} endContent={<UserPlusIcon className="size-4" />}>添加AI</Button>}
         <Button
           color="danger"
           endContent={<ArrowRightStartOnRectangleIcon className="size-4" />}
-          onClick={leave}
+          onPress={leave}
           size="sm"
         >
           退出

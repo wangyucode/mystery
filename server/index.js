@@ -53,6 +53,13 @@ io.on("connection", (socket) => {
     console.log("message->", data);
     handlers.message(data, socket, io);
   });
+  socket.on("room:addAi", (data) => {
+    console.log("room:addAi->", data);
+    if (handlers.addAi(data, socket, io)) {
+      count.ai++;
+      io.emit("count", count);
+    }
+  });
   socket.on("story:list", () => {
     console.log("story:list->");
     handlers.stroyList(socket);
