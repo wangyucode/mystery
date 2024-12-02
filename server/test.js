@@ -4,6 +4,9 @@ import { Level } from "level";
 
 const db = new Level("db", { valueEncoding: 'json' });
 console.log(db.status);
-await db.put("888", { count: 150 });
-const data = await db.get("888");
-console.log(data);
+db.once("open", async () => { 
+    await db.put("888", { count: 150 });
+    const data = await db.get("888");
+    console.log(data);
+});
+

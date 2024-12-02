@@ -6,7 +6,8 @@ import {
   Card,
   CardBody,
   CardFooter,
-  Chip
+  Chip,
+  Spinner
 } from "@nextui-org/react";
 import { Rating } from '@smastrom/react-rating'
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ export default function Home() {
   const [roomId, setRoomId] = useState("");
   const [stories, setStories] = useState([]);
   const [key, setKey] = useState("");
+  const [storyLoading, setStoryLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function Home() {
     socket.on("story:list", (stories) => {
       console.log("story:list->", stories);
       setStories(stories);
+      setStoryLoading(false);
     });
 
     socket.emit("story:list");
@@ -91,8 +94,9 @@ export default function Home() {
 
   return (
     <main className="flex-1 flex flex-col px-4 gap-4">
-      <div className="grid grid-cols-2 content-start gap-4 justify-start">
-        {stories.map((story) => (
+      <div className={`grid content-start gap-4 justify-start ${storyLoading ? "grid-cols-1" : "grid-cols-2"}`}>
+
+        {storyLoading ? <Spinner size="lg"/> : stories.map((story) => (
           <Card
             key={story.title}
             className={`h-64 ${story.title === select ? "ring-4" : ""}`}
